@@ -25,7 +25,7 @@ df3 <- slice(RLD, 3506:22705)
 df4 <- slice(RLD, 22707:104388)
 df5 <- slice(RLD, 104390:108132)
 df6 <- slice(RLD, 108134:108277)
-df7 <- slice(RLD, 108279:122201)
+df7 <- slice(RLD, 108279:n())
 
 #calculating total RLD for all dfs
 df1[11:22] <- NULL
@@ -81,7 +81,7 @@ names(df)[9]<-"depth"
 
 df <- drop_na(df, RLD)
 
-#adding precrop species and duration ####
+#2. adding precrop species and duration ####
 t1 <- filter(df, treatment == 1)
 t2 <- filter(df, treatment == 2)
 t3 <- filter(df, treatment == 3)
@@ -180,7 +180,7 @@ df1 <- bind_rows(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t1
 
 df1 <- drop_na(df1, RLD)
 
-#calculation of mean values ####
+#3. calculation of mean values ####
 #calculating means for each plot, year, date and depth
 df11 <- df1 %>% group_by(Trial, crop, JDay, Year, treatment, plot_ID, depth, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
@@ -195,6 +195,10 @@ df13 <- df12 %>% group_by(Trial, crop, Year, treatment, depth, precrop, precrop_
 df13 <- drop_na(df13, mean_RLD2)
 
 #splitting df into TrialA and TrialB
+df13$precrop_d[df13$precrop_d == "1"] <- "1 Precrop Year"
+df13$precrop_d[df13$precrop_d == "2"] <- "2 Precrop Years"
+df13$precrop_d[df13$precrop_d == "3"] <- "3 Precrop Years"
+
 TrialA <- filter(df13, Trial == "Trial A")
 trialA <- filter(df13, Trial == "trial A")
 TrialB <- filter(df13, Trial == "Trial B")
@@ -202,7 +206,7 @@ trialB <- filter(df13, Trial == "trial B")
 
 trialB <- bind_rows(trialB, TrialB)
 
-#plotting 
+#4. plotting ####
 trialB <- transform(trialB, depth = as.numeric(depth), 
                     precrop = as.factor(precrop), 
                     precrop_d = as.factor(precrop_d))
