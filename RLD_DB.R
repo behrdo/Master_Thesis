@@ -180,7 +180,71 @@ df1 <- bind_rows(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t1
 
 df1 <- drop_na(df1, RLD)
 
-#3. calculation of mean values ####
+#3. Splitting the df into TrialA and TrialB ####
+TrialA <- filter(df1, Trial == "Trial A")
+trialA <- filter(df1, Trial == "trial A")
+TrialB <- filter(df1, Trial == "Trial B")
+trialB <- filter(df1, Trial == "trial B")
+
+trialB <- bind_rows(trialB, TrialB)
+trialA <- bind_rows(trialA, TrialA)
+
+#4. Plot1: TrialA - Lu2 and Ch2 depth differentiated during flowering ####
+#calculating means for each plot, maincrop, date and depth
+plot1 <- trialA %>% group_by(crop, JDay, Year, treatment, plot_ID, depth, precrop, precrop_d) %>% 
+  summarise(mean_RLD = mean(RLD))
+
+#calculating means for each treatment, year, date and depth
+plot1 <- plot1 %>% group_by(crop, JDay, Year, treatment, depth, precrop, precrop_d) %>% 
+  summarise(mean_RLD2 = mean(mean_RLD))
+
+#filtering Lu2 and Ch2 and their last measurement date (should be flowering????????)
+Lu <- filter(plot1, precrop == 1 & precrop_d == 2)
+Ch <- filter(plot1, precrop == 2 & precrop_d == 2 )
+
+plot1 <- bind_rows(Lu, Ch)
+
+plot1 <- plot1 %>% group_by(crop, Year, depth, precrop) %>% filter(JDay == max(JDay))
+plot1 <- drop_na(plot1, mean_RLD2)
+
+#somehow there are 2 JDays in SW and WB. I dont really get how this is possible,
+#for now i just remove them seperately (might be because of missing soil depths?)
+plot1 <- plot1[!(plot1$JDay == 215 & plot1$crop == "spring wheat"),]
+#plot1 <- plot1[!(plot1$JDay == 182 & plot1$crop == "winter barley"),]
+#-> measurements of the WB treatments were just taken on different dates!
+
+#removing winter oilseed rape since no data for precrop 1
+plot1 <- plot1[!(plot1$crop == "winter oilseed rape"),]
+
+plot1$precrop_d[plot1$precrop_d == "2"] <- "2 Precrop Years"
+
+plot1 <- transform(plot1, depth = as.numeric(depth), 
+                    precrop = as.factor(precrop), 
+                    precrop_d = as.factor(precrop_d))
+
+ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = precrop)) + 
+  geom_line() +
+    facet_grid(precrop_d ~ Year + crop) +
+  labs(x = bquote("Soil Depth [cm]"), y= "Rootlength Density [cm *" ~cm^-3 ~"]", 
+       title = "Trial A") +
+  theme_bw() +
+  scale_x_reverse()+
+  coord_flip()+
+  theme(axis.text = element_text(size = 12), 
+        axis.title.y = element_text(size = 14),
+        axis.title.x = element_text(size = 14),
+        plot.title = element_text(size = 15), 
+        strip.text.y = element_text(size = 13), 
+        strip.text.x = element_text(size = 13),
+        legend.position = "bottom",
+        legend.text = element_text(size = 12),
+        legend.title=element_text(size=14)) +
+  theme_bw()
+
+#5. Plot2: TrialA - Fe1 depth differentiated during flowering
+
+
+#calculation of mean values ####
 #calculating means for each plot, year, date and depth
 df11 <- df1 %>% group_by(Trial, crop, JDay, Year, treatment, plot_ID, depth, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
@@ -206,7 +270,7 @@ trialB <- filter(df13, Trial == "trial B")
 
 trialB <- bind_rows(trialB, TrialB)
 
-#4. plotting ####
+#plotting ####
 trialB <- transform(trialB, depth = as.numeric(depth), 
                     precrop = as.factor(precrop), 
                     precrop_d = as.factor(precrop_d))
