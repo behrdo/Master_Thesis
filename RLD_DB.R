@@ -352,6 +352,19 @@ plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, pre
 plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD2 = mean(mean_RLD))
 
+#checking if JDays are fine (used a leap year at the beginning so they are all 1 off)
+df2010 <- filter(plot1, Year == 2010)
+df2011 <- filter(plot1, Year == 2011)
+df2012 <- filter(plot1, Year == 2012)
+
+df2010$JDay <- as.Date(df2010$JDay, "2010-01-01")
+df2011$JDay <- as.Date(df2011$JDay, "2011-01-01")
+df2012$JDay <- as.Date(df2012$JDay, "2012-01-01")
+
+#fixing this
+plot1$JDay <- plot1$JDay-1
+
+#formating the df
 plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
 
 plot1$depth_class[plot1$depth_class == "1"] <- "<= 30cm"
@@ -364,12 +377,12 @@ plot1 <- transform(plot1, depth_class = as.factor(depth_class),
                    precrop = as.factor(precrop), 
                    JDay = as.numeric(JDay))
 
-ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2018-01-01")), y = mean_RLD2, colour = precrop, linetype = depth_class, shape = precrop)) + 
+ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = mean_RLD2, colour = precrop, linetype = depth_class, shape = precrop)) + 
   geom_line() + geom_point() +
   facet_grid(cols = vars(Year, crop)) +
   labs(y = "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
        title = "Trial A") +
-  scale_x_date(date_labels = "%b", date_breaks = "1 month") +
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
   theme_bw() +
   scale_colour_manual(values = c("red1", "steelblue1")) + 
   theme(axis.text = element_text(size = 12), 
@@ -380,7 +393,7 @@ ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2018-01-01")), y = mean_RL
         strip.text.x = element_text(size = 13),
         legend.text = element_text(size = 12),
         legend.title=element_blank(),
-        legend.position = c(0.09, 0.82))
+        legend.position = c(0.09, 0.82),)
 
 
 
@@ -405,6 +418,23 @@ Fe1 <- filter(plot1, precrop == 3 & precrop_d == 2)
 
 plot1 <- bind_rows(Ch2, Fe1)
 
+plot1$JDay <- plot1$JDay-1
+
+#checking if JDays are fine (used a leap year at the beginning so they are all 1 off)
+df2012 <- filter(plot1, Year == 2012)
+df2013 <- filter(plot1, Year == 2013)
+
+df2012$Date <- as.Date(df2012$JDay, "2012-01-01")
+df2013$Date <- as.Date(df2013$JDay, "2013-01-01")
+#same problem as in trialA -> fixed this above
+
+#to better detect which dates strangely spike in 2013, i decided to keep the normal dates for now
+plot1 <- bind_rows(df2012, df2013)
+
+#removing 02.05(121) and 03.06(153) (both monolith methods)
+plot1 <- plot1[!(plot1$Year == "2013" & plot1$JDay == 121),] 
+plot1 <- plot1[!(plot1$Year == "2013" & plot1$JDay == 153),] 
+
 plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
 
 plot1$depth_class[plot1$depth_class == "1"] <- "<= 30cm"
@@ -417,19 +447,21 @@ plot1 <- transform(plot1, depth_class = as.factor(depth_class),
                    precrop = as.factor(precrop), 
                    JDay = as.numeric(JDay))
 
-ggplot(plot1, aes(x = JDay, y = mean_RLD2, colour = precrop, linetype = depth_class, shape = precrop)) + 
+ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = mean_RLD2, colour = precrop, linetype = depth_class, shape = precrop)) + 
   geom_line() + geom_point() +
   facet_grid(cols = vars(Year, crop)) +
-  labs(x = "JDay", y = "Rootlength Density [cm *" ~cm^-3 ~"]", 
+  labs(y = "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
        title = "Trial B") +
   theme_bw() +
+  scale_colour_manual(values = c("red1", "steelblue1")) + 
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
   theme(axis.text = element_text(size = 12), 
         axis.title.y = element_text(size = 14),
         axis.title.x = element_text(size = 14),
         plot.title = element_text(size = 15), 
         strip.text.y = element_text(size = 13), 
         strip.text.x = element_text(size = 13),
-        legend.position = "bottom",
+        legend.position = c(0.09, 0.82),
         legend.text = element_text(size = 12),
         legend.title=element_text(size=14))
 
