@@ -239,12 +239,15 @@ plot1 <- transform(plot1, depth = as.numeric(depth),
                    precrop = as.factor(precrop), 
                    precrop_d = as.factor(precrop_d))
 
-ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = precrop)) + 
+colnames(plot1)[5] <- "Precrop"
+
+ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = Precrop)) + 
   geom_line() +
   facet_grid(precrop_d ~ Year + crop) +
-  labs(x = bquote("Soil Depth [cm]"), y= "Rootlength Density [cm *" ~cm^-3 ~"]", 
+  labs(x = bquote("Soil Depth [cm]"), y= "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
        title = "Trial A") +
   theme_bw() +
+  scale_colour_manual(values = c("red1", "steelblue1", "forestgreen")) + 
   scale_x_reverse()+
   coord_flip()+
   theme(axis.text = element_text(size = 12), 
@@ -303,11 +306,14 @@ plot1 <- transform(plot1, depth = as.numeric(depth),
                    precrop = as.factor(precrop), 
                    precrop_d = as.factor(precrop_d))
 
-ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = precrop)) + 
+colnames(plot1)[5] <- "Precrop"
+
+ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = Precrop)) + 
   geom_line() +
   facet_grid(precrop_d ~ Year + crop) +
-  labs(x = bquote("Soil Depth [cm]"), y= "Rootlength Density [cm *" ~cm^-3 ~"]", 
+  labs(x = bquote("Soil Depth [cm]"), y= "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
        title = "Trial B") +
+  scale_colour_manual(values = c("red1", "steelblue1")) + 
   theme_bw() +
   scale_x_reverse()+
   coord_flip()+
@@ -447,7 +453,10 @@ plot1 <- transform(plot1, depth_class = as.factor(depth_class),
                    precrop = as.factor(precrop), 
                    JDay = as.numeric(JDay))
 
-ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = mean_RLD2, colour = precrop, linetype = depth_class, shape = precrop)) + 
+colnames(plot1)[4] <- "Depth"
+colnames(plot1)[5] <- "Precrop"
+
+ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = mean_RLD2, colour = Precrop, linetype = Depth, shape = Precrop)) + 
   geom_line() + geom_point() +
   facet_grid(cols = vars(Year, crop)) +
   labs(y = "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
@@ -457,11 +466,11 @@ ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = mean_RL
   scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
   theme(axis.text = element_text(size = 12), 
         axis.title.y = element_text(size = 14),
-        axis.title.x = element_text(size = 14),
+        axis.title.x = element_blank(),
         plot.title = element_text(size = 15), 
         strip.text.y = element_text(size = 13), 
         strip.text.x = element_text(size = 13),
-        legend.position = c(0.09, 0.82),
+        legend.position = c(0.09, 0.75),
         legend.text = element_text(size = 12),
         legend.title=element_text(size=14))
 
