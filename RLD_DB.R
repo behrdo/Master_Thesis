@@ -82,7 +82,7 @@ names(df)[9]<-"depth"
 df <- drop_na(df, RLD)
 
 #2. adding precrop species and duration ####
-df_probe <- df %>% mutate(precrop = case_when(treatment == 1 ~ "1", 
+df <- df %>% mutate(precrop = case_when(treatment == 1 ~ "1", 
                                         treatment == 2 ~ "1",
                                         treatment == 3 ~ "1",
                                         treatment == 4 ~ "1",
@@ -137,115 +137,18 @@ df_probe <- df %>% mutate(precrop = case_when(treatment == 1 ~ "1",
                                           treatment == 26 ~ "3",
                                           treatment == 27 ~ "3"))
 
-df_probe <- transform(df_probe, precrop = as.numeric(precrop),
-                      precrop_d = as.numeric(precrop_d))
+df <- transform(df, precrop = as.numeric(precrop),
+                precrop_d = as.numeric(precrop_d))
 
+df <- drop_na(df, RLD)
 
-t1 <- filter(df, treatment == 1)
-t2 <- filter(df, treatment == 2)
-t3 <- filter(df, treatment == 3)
-t4 <- filter(df, treatment == 4)
-t5 <- filter(df, treatment == 5)
-t6 <- filter(df, treatment == 6)
-t7 <- filter(df, treatment == 7)
-t8 <- filter(df, treatment == 8)
-t9 <- filter(df, treatment == 9)
-t10 <- filter(df, treatment == 10)
-t11 <- filter(df, treatment == 11)
-t12 <- filter(df, treatment == 12)
-t13 <- filter(df, treatment == 13)
-t14 <- filter(df, treatment == 14)
-t15 <- filter(df, treatment == 15)
-t16 <- filter(df, treatment == 16)
-t17 <- filter(df, treatment == 17)
-t18 <- filter(df, treatment == 18)
-t19 <- filter(df, treatment == 19)
-t20 <- filter(df, treatment == 20)
-t21 <- filter(df, treatment == 21)
-t22 <- filter(df, treatment == 22)
-t23 <- filter(df, treatment == 23)
-t24 <- filter(df, treatment == 24)
-t25 <- filter(df, treatment == 25)
-t26 <- filter(df, treatment == 26)
-t27 <- filter(df, treatment == 27)
-
-#no data for treatments 11, 16, 17, 25, 26, 27. treatment 14, 22, 23, 24 have low row numbers
-#treatments 15 and 21 have very high observation numbers
-t1$precrop <- rep(1, nrow(t1))
-t1$precrop_d <- rep(1, nrow(t1))
-t2$precrop <- rep(1, nrow(t2))
-t2$precrop_d <- rep(1, nrow(t2))
-t3$precrop <- rep(1, nrow(t3))
-t3$precrop_d <- rep(1, nrow(t3))
-
-t4$precrop <- rep(1, nrow(t4))
-t4$precrop_d <- rep(2, nrow(t4))
-t5$precrop <- rep(1, nrow(t5))
-t5$precrop_d <- rep(2, nrow(t5))
-t6$precrop <- rep(1, nrow(t6))
-t6$precrop_d <- rep(2, nrow(t6))
-
-t7$precrop <- rep(1, nrow(t7))
-t7$precrop_d <- rep(3, nrow(t7))
-t8$precrop <- rep(1, nrow(t8))
-t8$precrop_d <- rep(3, nrow(t8))
-t9$precrop <- rep(1, nrow(t9))
-t9$precrop_d <- rep(3, nrow(t9))
-
-t10$precrop <- rep(2, nrow(t10))
-t10$precrop_d <- rep(1, nrow(t10))
-t11$precrop <- rep(2, nrow(t11))
-t11$precrop_d <- rep(1, nrow(t11))
-t12$precrop <- rep(2, nrow(t12))
-t12$precrop_d <- rep(1, nrow(t12))
-
-t13$precrop <- rep(2, nrow(t13))
-t13$precrop_d <- rep(2, nrow(t13))
-t14$precrop <- rep(2, nrow(t14))
-t14$precrop_d <- rep(2, nrow(t14))
-t15$precrop <- rep(2, nrow(t15))
-t15$precrop_d <- rep(2, nrow(t15))
-
-t16$precrop <- rep(2, nrow(t16))
-t16$precrop_d <- rep(3, nrow(t16))
-t17$precrop <- rep(2, nrow(t17))
-t17$precrop_d <- rep(3, nrow(t17))
-t18$precrop <- rep(2, nrow(t18))
-t18$precrop_d <- rep(3, nrow(t18))
-
-t19$precrop <- rep(3, nrow(t19))
-t19$precrop_d <- rep(1, nrow(t19))
-t20$precrop <- rep(3, nrow(t20))
-t20$precrop_d <- rep(1, nrow(t20))
-t21$precrop <- rep(3, nrow(t21))
-t21$precrop_d <- rep(1, nrow(t21))
-
-t22$precrop <- rep(3, nrow(t22))
-t22$precrop_d <- rep(2, nrow(t22))
-t23$precrop <- rep(3, nrow(t23))
-t23$precrop_d <- rep(2, nrow(t23))
-t24$precrop <- rep(3, nrow(t24))
-t24$precrop_d <- rep(2, nrow(t24))
-
-t25$precrop <- rep(3, nrow(t25))
-t25$precrop_d <- rep(3, nrow(t25))
-t26$precrop <- rep(3, nrow(t26))
-t26$precrop_d <- rep(3, nrow(t26))
-t27$precrop <- rep(3, nrow(t27))
-t27$precrop_d <- rep(3, nrow(t27))
-
-df1 <- bind_rows(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, 
-                t19, t20, t21, t22, t23, t24, t25, t26, t27)
-
-df1 <- drop_na(df1, RLD)
-
-df1$crop[df1$crop == "rapeseed"] <- "winter oilseed rape"
+df$crop[df$crop == "rapeseed"] <- "winter oilseed rape"
 
 #3. Splitting the df into TrialA and TrialB ####
-TrialA <- filter(df1, Trial == "Trial A")
-trialA <- filter(df1, Trial == "trial A")
-TrialB <- filter(df1, Trial == "Trial B")
-trialB <- filter(df1, Trial == "trial B")
+TrialA <- filter(df, Trial == "Trial A")
+trialA <- filter(df, Trial == "trial A")
+TrialB <- filter(df, Trial == "Trial B")
+trialB <- filter(df, Trial == "trial B")
 
 trialB <- bind_rows(trialB, TrialB)
 trialA <- bind_rows(trialA, TrialA)
