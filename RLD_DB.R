@@ -28,43 +28,72 @@ df6 <- slice(RLD, 108134:108277)
 df7 <- slice(RLD, 108279:n())
 
 #calculating total RLD for all dfs
-df1[11:22] <- NULL
+df1[20:22] <- NULL
+df1[18] <- NULL
+df1[11:16] <- NULL
 df1[6] <- NULL
-names(df1)[9]<-"RLD"
+df1[8] <- NULL
+names(df1)[8]<-"RLD"
+names(df1)[9]<-"RL_total"
+names(df1)[10]<-"RL_bp"
+df1 <- mutate(df1, RL_total = RLD/2)
 
 df2[14:22] <- NULL
-df2[12:13] <- NULL
-df2[10] <- NULL
+df2[9:10] <- NULL
 df2[6] <- NULL
-names(df2)[9]<-"RLD"
+names(df2)[8]<-"RLD"
+names(df2)[10]<-"RLD_bp"
+df2 <- mutate(df2, RL_total = RLD/2, RL_bp = RLD_bp/2)
+df2[9:10] <- NULL
 
-df3[12:22] <- NULL
-df3[10] <- NULL
+df3[20:22] <- NULL
+df3[18] <- NULL
+df3[12:16] <- NULL
 df3[6] <- NULL
-names(df3)[9]<-"RLD"
+df3[8:9] <- NULL
+names(df3)[8]<-"RLD"
+names(df3)[9]<-"RL_total"
+names(df3)[10]<-"RL_bp"
 
-df4[12:22] <- NULL
-df4[10] <- NULL
+df4[20:22] <- NULL
+df4[18] <- NULL
+df4[12:16] <- NULL
 df4[6] <- NULL
-names(df4)[9]<-"RLD"
+df4[8:9] <- NULL
+names(df4)[8]<-"RLD"
+names(df4)[9]<-"RL_total"
+names(df4)[10]<-"RL_bp"
 
 #df5 is TrialC
-df5[12:22] <- NULL
-df5[10] <- NULL
+df5[20:22] <- NULL
+df5[18] <- NULL
+df5[12:16] <- NULL
 df5[6] <- NULL
-names(df5)[9]<-"RLD"
+df5[8:9] <- NULL
+names(df5)[8]<-"RLD"
+names(df5)[9]<-"RL_total"
+names(df5)[10]<-"RL_bp"
 
-df6[11:22] <- NULL
+df6[20:22] <- NULL
+df6[18] <- NULL
+df6[11:16] <- NULL
 df6[6] <- NULL
-names(df6)[9]<-"RLD"
+df6[8] <- NULL
+names(df6)[8]<-"RLD"
+names(df6)[9]<-"RL_total"
+names(df6)[10]<-"RL_bp"
+df6 <- mutate(df6, RL_total = RLD/2)
 
 #df7: RLU total seems to be shifted 1 column to the right here -> RLU bulk = RLU total
 #calculating RLD out of RLU total first. RLU/2x5x5x0.5 = RLD
 names(df7)[15]<-"RLU"
-df7 <- mutate(df7, RLD = RLU/(2*5*5*0.5))
-
+names(df7)[17]<-"RLU_bp"
+df7 <- mutate(df7, RLD = RLU/(2*5*5*0.5), RLD_bp = RLU_bp/(2*5*5*0.5))
 df7[10:22] <- NULL
 df7[6] <- NULL
+df7[8] <- NULL
+df7 <- mutate(df7, RL_total = RLD/2, RL_bp = RLD_bp/2)
+df7[9] <- NULL
 
 #adding the tables together with the exception of df5 (TrialC)
 df <- bind_rows(df1, df2, df3, df4, df6, df7)
@@ -152,7 +181,6 @@ trialB <- filter(df, Trial == "trial B")
 
 trialB <- bind_rows(trialB, TrialB)
 trialA <- bind_rows(trialA, TrialA)
-
 
 #4. Plot1: TrialA - Lu2 and Ch2 depth differentiated during flowering ####
 #trying to find the last measurement date
