@@ -324,16 +324,16 @@ ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = Precrop)) +
 #5. Plot2: TrialB - Fe2 depth differentiated during flowering ####
 #finding the last measurement date
 fm_plot1 <- filter(trialB, Year == "2012" & crop == "fodder mallow")
-fm_plot1 <- filter(fm_plot1, JDay == 198)
+fm_plot1 <- filter(fm_plot1, JDay == 198) #16.07.2012
 
 sw_plot1 <- filter(trialB, Year == "2012" & crop == "spring wheat")
-sw_plot1 <- filter(sw_plot1, JDay == 198)
+sw_plot1 <- filter(sw_plot1, JDay == 174) #Lu only on 174/22.06.2012
 
 wb_plot1 <- filter(trialB, Year == "2013" & crop == "winter barley")
-wb_plot1 <- filter(wb_plot1, JDay == 170)
+wb_plot1 <- filter(wb_plot1, JDay == 147) #Lu only on 147/27.05.2012
 
 wosr_plot1 <- filter(trialB, Year == "2013" & crop == "winter oilseed rape")
-wosr_plot1 <- filter(wosr_plot1, JDay == 177)
+wosr_plot1 <- filter(wosr_plot1, JDay == 177) #26.06.2013
 
 plot1 <- bind_rows(fm_plot1, sw_plot1, wb_plot1, wosr_plot1)
 
@@ -372,7 +372,7 @@ ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = Precrop)) +
   facet_grid(precrop_d ~ Year + crop) +
   labs(x = bquote("Soil Depth [cm]"), y= "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
        title = "Trial B") +
-  scale_colour_manual(values = c("red1", "steelblue1")) + 
+  scale_colour_manual(values = c("red1", "steelblue1", "forestgreen")) + 
   theme_bw() +
   scale_x_reverse()+
   coord_flip()+
