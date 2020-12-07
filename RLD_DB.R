@@ -27,7 +27,7 @@ df5 <- slice(RLD, 104390:108132)
 df6 <- slice(RLD, 108134:108277)
 df7 <- slice(RLD, 108279:n())
 
-#calculating total RLD for all dfs
+#calculating total RLD, RL and RL biopores for all dfs
 df1[20:22] <- NULL
 df1[18] <- NULL
 df1[11:16] <- NULL
@@ -318,17 +318,15 @@ ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = Precrop)) +
         legend.title=element_text(size=14)) +
   theme_bw()
 
-#6. Plot3: TrialA - Ch2 and Fe1 on different dates ####
+#6. Plot3: TrialA - Ch2 and Fe1 on different dates (RLD) ####
 #creating two depth groups: <30cm and >30cm
-trialA <- transform(trialA, depth = as.numeric(depth))
+plot1 <- transform(trialA, depth = as.numeric(depth))
 
-trialA <- trialA %>% mutate(depth_class = case_when(depth <= 30 ~ "1", 
+plot1 <- plot1 %>% mutate(depth_class = case_when(depth <= 30 ~ "1", 
                                                     depth > 30 ~ "2") )
-trialA <- transform(trialA, depth_class = as.factor(depth_class))
+plot1 <- transform(plot1, depth_class = as.factor(depth_class))
 
 #filtering Lu1+2 and Ch1+2 
-plot1 <- trialA
-
 Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
 Fe1 <- filter(plot1, precrop == 3 & precrop_d == 1)
 
@@ -393,15 +391,15 @@ ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = mean_RL
 
 
 
-#7. Plot4: TrialB - Ch2 and Fe2 on different dates ####
-trialB <- transform(trialB, depth = as.numeric(depth))
+#7. Plot4: TrialB - Ch2 and Fe2 on different dates (RLD) ####
+plot1 <- transform(trialB, depth = as.numeric(depth))
 
-trialB <- trialB %>% mutate(depth_class = case_when(depth <= 30 ~ "1", 
+plot1 <- plot1 %>% mutate(depth_class = case_when(depth <= 30 ~ "1", 
                                                     depth > 30 ~ "2") )
-trialB <- transform(trialB, depth_class = as.factor(depth_class))
+plot1 <- transform(plot1, depth_class = as.factor(depth_class))
 
 #calculating means for each plot, maincrop, date and !!depth_class!!
-plot1 <- trialB %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
 
 #calculating means for each treatment, year, date and depth
@@ -465,7 +463,225 @@ ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = mean_RL
         legend.title=element_text(size=14))
 
 
+#8. Plot5: TrialA - Ch2 and Fe1 on different dates (RL) ####
+#creating two depth groups: <30cm and >30cm
+plot1 <- transform(trialA, depth = as.numeric(depth))
 
+plot1 <- plot1 %>% mutate(depth_class = case_when(depth < 30 ~ "1", 
+                                                  depth >= 30 & depth <= 125  ~ "2", 
+                                                  depth > 125 ~ "3") )
+
+plot1 <- transform(plot1, depth_class = as.factor(depth_class))
+
+#filtering Lu1+2 and Ch1+2 
+Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
+Fe1 <- filter(plot1, precrop == 3 & precrop_d == 1)
+
+plot1 <- bind_rows(Ch2, Fe1)
+
+#filtering the dates to check for problems
+df1 <- filter(plot1, Year == "2010" & JDay == 208 & crop == "spring wheat")#way more data
+df1 <- filter(plot1, Year == "2010" & JDay == 215 & crop == "spring wheat")#monolith -> raus!
+plot1 <- plot1[!(plot1$crop == "spring wheat" & plot1$JDay == 215),] #removing monolith
+
+#calculating means for each plot, maincrop, date and !!depth_class!!
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
+  summarise(mean_RL = mean(RL_total))
+
+#calculating means for each treatment, year, date and depth
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
+  summarise(mean_RL2 = mean(mean_RL))
+
+#checking if JDays are fine (used a leap year at the beginning so they are all 1 off)
+df2010 <- filter(plot1, Year == 2010)
+df2011 <- filter(plot1, Year == 2011)
+df2012 <- filter(plot1, Year == 2012)
+
+df2010$JDay <- as.Date(df2010$JDay, "2010-01-01")
+df2011$JDay <- as.Date(df2011$JDay, "2011-01-01")
+df2012$JDay <- as.Date(df2012$JDay, "2012-01-01")
+
+#fixing this
+plot1$JDay <- plot1$JDay-1
+
+#formating the df
+plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
+
+plot1$depth_class[plot1$depth_class == "1"] <- "< 30cm"
+plot1$depth_class[plot1$depth_class == "2"] <- "30 - 125cm"
+plot1$depth_class[plot1$depth_class == "3"] <- "> 125cm"
+plot1$precrop[plot1$precrop == "2"] <- "Ch2"
+plot1$precrop[plot1$precrop == "3"] <- "Fe1"
+
+plot1 <- transform(plot1, depth_class = as.factor(depth_class), 
+                   Year = as.factor(Year), 
+                   precrop = as.factor(precrop), 
+                   JDay = as.numeric(JDay))
+
+ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = mean_RL2, colour = precrop, linetype = depth_class, shape = precrop)) + 
+  geom_line() + geom_point() +
+  facet_grid(cols = vars(Year, crop)) +
+  labs(y = "Mean Rootlength [unit?]", 
+       title = "Trial A") +
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
+  theme_bw() +
+  scale_colour_manual(values = c("red1", "steelblue1")) + 
+  theme(axis.text = element_text(size = 12), 
+        axis.title.y = element_text(size = 14),
+        axis.title.x = element_blank(),
+        plot.title = element_text(size = 15), 
+        strip.text.y = element_text(size = 13), 
+        strip.text.x = element_text(size = 13),
+        legend.text = element_text(size = 12),
+        legend.title=element_blank(),
+        legend.position = c(0.09, 0.82),)
+
+
+#9. Plot6: TrialB - Ch2 and Fe2 on different dates (RL) ####
+plot1 <- transform(trialB, depth = as.numeric(depth))
+
+plot1 <- plot1 %>% mutate(depth_class = case_when(depth < 30 ~ "1", 
+                                                  depth >= 30 & depth <= 125  ~ "2", 
+                                                  depth > 125 ~ "3") )
+
+plot1 <- transform(plot1, depth_class = as.factor(depth_class))
+
+#calculating means for each plot, maincrop, date and !!depth_class!!
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
+  summarise(mean_RL = mean(RL_total))
+
+#calculating means for each treatment, year, date and depth
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
+  summarise(mean_RL2 = mean(mean_RL))
+
+#filtering Lu1+2 and Ch1+2 and their last measurement date (should be flowering????????)
+Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
+Fe1 <- filter(plot1, precrop == 3 & precrop_d == 2)
+
+plot1 <- bind_rows(Ch2, Fe1)
+
+plot1$JDay <- plot1$JDay-1
+
+#checking if JDays are fine (used a leap year at the beginning so they are all 1 off)
+df2012 <- filter(plot1, Year == 2012)
+df2013 <- filter(plot1, Year == 2013)
+
+df2012$Date <- as.Date(df2012$JDay, "2012-01-01")
+df2013$Date <- as.Date(df2013$JDay, "2013-01-01")
+#same problem as in trialA -> fixed this above
+
+#to better detect which dates strangely spike in 2013, i decided to keep the normal dates for now
+plot1 <- bind_rows(df2012, df2013)
+
+#removing 02.05(121) and 03.06(153) (both monolith methods)
+plot1 <- plot1[!(plot1$Year == "2013" & plot1$JDay == 121),] 
+plot1 <- plot1[!(plot1$Year == "2013" & plot1$JDay == 153),] 
+
+plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
+
+plot1$depth_class[plot1$depth_class == "1"] <- "< 30cm"
+plot1$depth_class[plot1$depth_class == "3"] <- "30 - 125cm"
+plot1$depth_class[plot1$depth_class == "2"] <- "> 125cm"
+plot1$precrop[plot1$precrop == "2"] <- "Ch2"
+plot1$precrop[plot1$precrop == "3"] <- "Fe2"
+
+plot1 <- transform(plot1, depth_class = as.factor(depth_class), 
+                   Year = as.factor(Year), 
+                   precrop = as.factor(precrop), 
+                   JDay = as.numeric(JDay))
+
+colnames(plot1)[4] <- "Depth"
+colnames(plot1)[5] <- "Precrop"
+
+ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = mean_RL2, colour = Precrop, linetype = Depth, shape = Precrop)) + 
+  geom_line() + geom_point() +
+  facet_grid(cols = vars(Year, crop)) +
+  labs(y = "Mean Rootlength [unit??]", 
+       title = "Trial B") +
+  theme_bw() +
+  scale_colour_manual(values = c("red1", "steelblue1")) + 
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
+  theme(axis.text = element_text(size = 12), 
+        axis.title.y = element_text(size = 14),
+        axis.title.x = element_blank(),
+        plot.title = element_text(size = 15), 
+        strip.text.y = element_text(size = 13), 
+        strip.text.x = element_text(size = 13),
+        legend.position = c(0.09, 0.75),
+        legend.text = element_text(size = 12),
+        legend.title=element_text(size=14))
+
+
+#10.Plot7: TrialA - share of roots in biopores ####
+#trying to find the last measurement date
+fm_plot1 <- filter(trialA, Year == "2010" & crop == "fodder mallow")
+fm_plot1 <- filter(fm_plot1, JDay == 230)
+#-> same dates as in the Detailübersicht sheet. last date: 18.08/230
+
+sw_plot1 <- filter(trialA, Year == "2010" & crop == "spring wheat")
+sw_plot1 <- filter(sw_plot1, JDay == 208)
+#-> without monolith data (03.08/2015). last date: 27.07/208
+
+wb_plot1 <- filter(trialA, Year == "2011" & crop == "winter barley")
+wb_plot1 <- filter(wb_plot1, JDay == 136)
+#Only 1y Fe and 2y Ch for 01.07/161 and 26.04/182 -> using 26.05/136
+
+plot1 <- bind_rows(fm_plot1, sw_plot1, wb_plot1)
+
+#calculating means for each plot, maincrop, date and depth
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, precrop, precrop_d) %>% 
+  summarise(mean_RLtot = mean(RL_total), mean_RLbio = mean(RL_bp))
+
+#calculating means for each treatment, year, date and depth
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>% 
+  summarise(mean_RLtot2 = mean(mean_RLtot), mean_RLbio2 = mean(mean_RLbio))
+
+plot1 <- plot1 %>% mutate(percentage = mean_RLbio2/mean_RLtot2*100)
+
+#filtering Lu1+2 and Ch1+2 and their last measurement date (should be flowering????????)
+Lu1 <- filter(plot1, precrop == 1 & precrop_d == 1)
+Ch1 <- filter(plot1, precrop == 2 & precrop_d == 1)
+Lu2 <- filter(plot1, precrop == 1 & precrop_d == 2)
+Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
+Fe1 <- filter(plot1, precrop == 3 & precrop_d == 1)
+
+plot1 <- bind_rows(Lu1, Ch1, Lu2, Ch2, Fe1)
+
+#removing winter oilseed rape since no data for precrop 1
+plot1 <- plot1[!(plot1$crop == "winter oilseed rape"),]
+
+plot1$precrop_d[plot1$precrop_d == "1"] <- "1 Precrop Year"
+plot1$precrop_d[plot1$precrop_d == "2"] <- "2 Precrop Years"
+plot1$precrop[plot1$precrop == "1"] <- "Lu"
+plot1$precrop[plot1$precrop == "2"] <- "Ch"
+plot1$precrop[plot1$precrop == "3"] <- "Fe"
+
+
+plot1 <- transform(plot1, depth = as.numeric(depth), 
+                   precrop = as.factor(precrop), 
+                   precrop_d = as.factor(precrop_d))
+
+colnames(plot1)[5] <- "Precrop"
+
+ggplot(plot1, aes(x = depth, y = percentage, colour = Precrop)) + 
+  geom_line() +
+  facet_grid(precrop_d ~ Year + crop) +
+  labs(x = bquote("Soil Depth [cm]"), y= "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
+       title = "Trial A") +
+  theme_bw() +
+  scale_colour_manual(values = c("red1", "steelblue1", "forestgreen")) + 
+  scale_x_reverse()+
+  coord_flip()+
+  theme(axis.text = element_text(size = 12), 
+        axis.title.y = element_text(size = 14),
+        axis.title.x = element_text(size = 14),
+        plot.title = element_text(size = 15), 
+        strip.text.y = element_text(size = 13), 
+        strip.text.x = element_text(size = 13),
+        legend.position = "bottom",
+        legend.text = element_text(size = 12),
+        legend.title=element_text(size=14)) +
+  theme_bw()
 
 
 
