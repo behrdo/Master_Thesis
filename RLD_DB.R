@@ -2,7 +2,7 @@ library(tidyverse)
 library(readxl)
 library(chillR)
 
-#downloading the table
+#importing the df
 RLD <- read_excel("Daten_CeFiT_A_B_final.xlsx", 
                   sheet = "RLD_main_crops", col_types = c("text", 
                   "date", "text", "text", "text", "text", 
@@ -202,11 +202,15 @@ plot1 <- bind_rows(fm_plot1, sw_plot1, wb_plot1)
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
 
+#count number of observations/plots
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>%
+  mutate(count = n())
+
 #calculating means for each treatment, year, date and depth
 plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>% 
   summarise(mean_RLD2 = mean(mean_RLD))
 
-#filtering Lu1+2 and Ch1+2 and their last measurement date (should be flowering????????)
+#filtering Lu1+2 and Ch1+2 
 Lu1 <- filter(plot1, precrop == 1 & precrop_d == 1)
 Ch1 <- filter(plot1, precrop == 2 & precrop_d == 1)
 Lu2 <- filter(plot1, precrop == 1 & precrop_d == 2)
@@ -272,6 +276,10 @@ plot1 <- bind_rows(fm_plot1, sw_plot1, wb_plot1, wosr_plot1)
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
 
+#count number of observations/plots
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>%
+  mutate(count = n())
+
 #calculating means for each treatment, year, date and depth
 plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>% 
   summarise(mean_RLD2 = mean(mean_RLD))
@@ -329,7 +337,6 @@ plot1 <- transform(plot1, depth_class = as.factor(depth_class))
 #filtering Lu1+2 and Ch1+2 
 Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
 Fe1 <- filter(plot1, precrop == 3 & precrop_d == 1)
-
 plot1 <- bind_rows(Ch2, Fe1)
 
 #filtering the dates to check for problems
@@ -341,6 +348,10 @@ plot1 <- plot1[!(plot1$crop == "spring wheat" & plot1$JDay == 215),] #removing m
 #calculating means for each plot, maincrop, date and !!depth_class!!
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
+
+#count number of observations/plots
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>%
+  mutate(count = n())
 
 #calculating means for each treatment, year, date and depth
 plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
@@ -401,6 +412,10 @@ plot1 <- transform(plot1, depth_class = as.factor(depth_class))
 #calculating means for each plot, maincrop, date and !!depth_class!!
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
+
+#count number of observations/plots
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>%
+  mutate(count = n())
 
 #calculating means for each treatment, year, date and depth
 plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
@@ -468,8 +483,8 @@ ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = mean_RL
 plot1 <- transform(trialA, depth = as.numeric(depth))
 
 plot1 <- plot1 %>% mutate(depth_class = case_when(depth < 30 ~ "1", 
-                                                  depth >= 30 & depth <= 125  ~ "2", 
-                                                  depth > 125 ~ "3") )
+                                                  depth >= 30 & depth <= 100  ~ "2", 
+                                                  depth > 100 ~ "3") )
 
 plot1 <- transform(plot1, depth_class = as.factor(depth_class))
 
@@ -549,6 +564,10 @@ plot1 <- transform(plot1, depth_class = as.factor(depth_class))
 #calculating means for each plot, maincrop, date and !!depth_class!!
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RL = mean(RL_total))
+
+#count number of observations/plots
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>%
+  mutate(count = n())
 
 #calculating means for each treatment, year, date and depth
 plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
@@ -632,6 +651,10 @@ plot1 <- bind_rows(fm_plot1, sw_plot1, wb_plot1)
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, precrop, precrop_d) %>% 
   summarise(mean_RLtot = mean(RL_total), mean_RLbio = mean(RL_bp))
 
+#count number of observations/plots
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>%
+  mutate(count = n())
+
 #calculating means for each treatment, year, date and depth
 plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>% 
   summarise(mean_RLtot2 = mean(mean_RLtot), mean_RLbio2 = mean(mean_RLbio))
@@ -666,7 +689,7 @@ colnames(plot1)[5] <- "Precrop"
 ggplot(plot1, aes(x = depth, y = percentage, colour = Precrop)) + 
   geom_line() +
   facet_grid(precrop_d ~ Year + crop) +
-  labs(x = bquote("Soil Depth [cm]"), y= "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
+  labs(x = bquote("Soil Depth [cm]"), y= "Share of Roots in Biopores [%]", 
        title = "Trial A") +
   theme_bw() +
   scale_colour_manual(values = c("red1", "steelblue1", "forestgreen")) + 

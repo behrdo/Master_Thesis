@@ -1,0 +1,12 @@
+1. RLD fertig machen
+	-> umrechnung von RLD in RL und visualisierung der Bioporen
+
+2. Wetter Daten fertig machen
+	-> MCWB
+Okt-Feb, März-Mai, Juni-Juli (Aug u Sept lassen wir weg)
+
+
+3. Effekt auf Erträge Korn und Stroh
+	-> Fokus auf 1. Nachfruchtjahr (Erträge)
+
+4. Effekt auf NPK Uptake
