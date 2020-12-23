@@ -91,9 +91,10 @@ df20$wasserbilanz <- as.numeric(df20$wasserbilanz)
 df <- bind_rows(df08, df09, df10, df11, df12,df12, df13, df14, df15, df16, df17, df18, df19, df20)
 df <- na.omit(df)
 
-df <- df %>% group_by(Year, Month) %>% summarise(sum_wasserbilanz = sum(wasserbilanz))
+#monthly
+df_months <- df %>% group_by(Year, Month) %>% summarise(sum_wasserbilanz = sum(wasserbilanz))
 
-ggplot(df, aes(x = Month, y = sum_wasserbilanz)) +
+ggplot(df_months, aes(x = Month, y = sum_wasserbilanz)) +
   geom_col(fill = "#0072B2", color = "black") +
   scale_fill_manual(values = c("#0072B2")) +
   labs(x = "Months", y = bquote("Monthly Climatic Water Balance [mm]")) + 
@@ -108,11 +109,38 @@ ggplot(df, aes(x = Month, y = sum_wasserbilanz)) +
         strip.text.y = element_text(size = 13), 
         strip.text.x = element_text(size = 13))
 
+#with 3 month-categories
+df$Month <- as.numeric(df$Month)
 
+df_cat <- df %>% mutate(group = case_when(Month == 1 ~ "1",
+                                          Month == 2 ~ "1",
+                                          Month == 3 ~ "2",
+                                          Month == 4 ~ "2",
+                                          Month == 5 ~ "2",
+                                          Month == 6 ~ "3",
+                                          Month == 7 ~ "3",
+                                          Month == 8 ~ "Na",
+                                          Month == 9 ~ "Na",
+                                          Month == 10 ~ "1",
+                                          Month == 11 ~ "1",
+                                          Month == 12 ~ "1",
+                                          ))
 
+df_cat <- df_cat %>% group_by(Year, group) %>% summarise(sum_wasserbilanz = sum(wasserbilanz))
 
+df_cat <- df_cat[!(df_cat$group == "Na"),] 
 
-
-
-
+ggplot(df_cat, aes(x = group, y = sum_wasserbilanz)) +
+  geom_col(fill = "#0072B2", color = "black") +
+  scale_fill_manual(values = c("#0072B2")) +
+  labs(x = "Months", y = bquote("Climatic Water Balance [mm]")) + 
+  facet_wrap(vars(Year)) +
+  scale_x_discrete(labels = c("Okt-Feb", "Mar-May", "Jun-Jul")) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12), 
+        axis.title.y = element_text(size = 14),
+        axis.title.x = element_blank(), 
+        plot.title = element_text(size = 15), 
+        strip.text.y = element_text(size = 13), 
+        strip.text.x = element_text(size = 13))
 
