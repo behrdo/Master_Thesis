@@ -744,6 +744,8 @@ npk22 <- npk22 %>% gather(N_total, P_total, K_total, key = "nutrient", value = "
 npk22$nutrient[npk22$nutrient == "N_total"] <- "N"
 npk22$nutrient[npk22$nutrient == "P_total"] <- "P"
 npk22$nutrient[npk22$nutrient == "K_total"] <- "K"
+npk22$trial[npk22$trial == "trial_A"] <- "Trial A"
+npk22$trial[npk22$trial == "trial_B"] <- "Trial B"
 
 # plotting
 npk22$nutrient <-  factor(npk22$nutrient, levels = c("N", "P", "K"))
