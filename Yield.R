@@ -497,7 +497,7 @@ yield3 <- transform(yield3, year = as.character(year), precrop_duration = as.cha
 yield5 <- transform(yield5, year = as.character(year))
 yield6 <- transform(yield6, year = as.character(year))
 
-yield <- bind_rows(yield, yield2, yield3, yield5, yield6)
+yield <- bind_rows(yield, yield3, yield5)
 
 # combining the treatments
 yield <- yield %>% unite(precrop, precrop_duration, col = "treatment", sep ="-")
@@ -526,7 +526,7 @@ yield_mean$Dry_Matter[yield_mean$Dry_Matter == "TM_mix"] <- "Mixed DM"
 #yield_npk <- na.omit(yield_npk)
 yield_npk <- yield %>% replace(is.na(.), 0) %>% 
   mutate(N_total = N_grain + N_residues + N_mix, P_total = P_grain + P_residues + P_mix,
-         K_total = P_grain + P_residues + P_mix)
+         K_total = K_grain + K_residues + K_mix)
 yield_npk[5:16] <- NULL
 
 # making seperate tables for the facet wrap
@@ -543,7 +543,6 @@ wrapB <- wrapB[!(wrapB$crop == "Winter Oilseed Rape" & wrapB$Dry_Matter == "Resi
 NPK_A <- NPK_A[!(NPK_A$crop == "Winter Wheat" & NPK_A$year == 2014),]
 NPK_A <- NPK_A[!(NPK_A$crop == "Spring Wheat" & NPK_A$year == 2019),]
 NPK_B <- NPK_B[!(NPK_B$crop == "Spring Wheat" & NPK_B$year == 2020),]
-NPK_B <- NPK_B[!(NPK_B$crop == "Winter Oilseed Rape" & NPK_B$Dry_Matter == "Residue DM"),]
 
 # calculating cumumulative yields for trialA
 wrapA$Dry_Matter[wrapA$Dry_Matter == "Mixed DM"] <- "Residue DM"
@@ -640,13 +639,13 @@ ggplot(wrapB, aes(x = treatment, y = mean_tm, fill = Dry_Matter)) +
         legend.position = "bottom", 
         legend.title = element_blank())
 
-# second precrop phase and trialC
-
 # Plottig NPK ####
 #TA
 # NPK_A$treatment <-  factor(NPK_A$treatment, levels = c("Fescue 1", "Fescue 2", "Chicory 2", "Lucerne 2"))
 NPK_A$year <- factor(NPK_A$year, levels = c("2010", "2011", "2012", "2013", "2015", "2010-2015"))
 NPK_A$nutrient <-  factor(NPK_A$nutrient, levels = c("N", "P", "K"))
+NPK_A[NPK_A == 0] <- NA
+NPK_A <- na.omit(NPK_A)
 
 ggplot(NPK_A, aes(x = treatment, y = value, fill = nutrient)) +
   geom_bar(stat = "identity", position = "stack", colour = "black") +
@@ -668,6 +667,8 @@ ggplot(NPK_A, aes(x = treatment, y = value, fill = nutrient)) +
 #NPK_B$treatment <-  factor(NPK_B$treatment, levels = c("Fescue 1", "Fescue 2", "Chicory 2", "Lucerne 2"))
 NPK_B$year <- factor(NPK_B$year, levels = c("2012", "2013", "2014", "2015", "2016", "2017", "2012-2017"))
 NPK_B$nutrient <-  factor(NPK_B$nutrient, levels = c("N", "P", "K"))
+NPK_B[NPK_B == 0] <- NA
+NPK_B <- na.omit(NPK_B)
 
 ggplot(NPK_B, aes(x = treatment, y = value, fill = nutrient)) +
   geom_bar(stat = "identity", position = "stack", colour = "black") +
@@ -724,8 +725,7 @@ ggplot(yield221, aes(x = treatment, y = value, fill = Dry_Matter)) +
   # facet_grid(cols = vars(crop)) +
   scale_fill_manual(values = c("darkgoldenrod1", "forestgreen"))  +
   labs(x = "Treatment", 
-       y = bquote("Mean Yield [t* " ~ha^-1~"]"), 
-       title = "Trial A") +
+       y = bquote("Mean Yield [t* " ~ha^-1~"]")) +
   theme_bw() +
   theme(axis.text = element_text(size = 10), 
         axis.title.y = element_text(size = 14),
@@ -756,8 +756,7 @@ ggplot(npk22, aes(x = treatment, y = value, fill = nutrient)) +
   facet_wrap(~ trial + year, scales = "free") +
   scale_fill_manual(values = c("cornflowerblue", "forestgreen", "darkgoldenrod1")) +
   labs(x = "Treatment", 
-       y = bquote("Mean Nutrient Uptake [kg* " ~ha^-1~"]"), 
-       title = "Trial A Nutrient Uptake") +
+       y = bquote("Mean Nutrient Uptake [kg* " ~ha^-1~"]")) +
   theme_bw() +
   theme(axis.text = element_text(size = 10), 
         axis.title.y = element_text(size = 14),
