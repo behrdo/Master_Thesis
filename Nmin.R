@@ -1,6 +1,8 @@
 library(tidyverse)
 library(readxl)
 library(chillR)
+library(gridExtra)
+library(ggpubr)
 
 # 1. Loading the table and making it easier to work with ####
 Nmin <- read_excel("Daten_CeFiT_A_B_final.xlsx", sheet = "Nmin")
@@ -29,6 +31,10 @@ Nmin <- Nmin[!(Nmin$Year == "2011" & Nmin$JDay == 52),]
 Nmin <- Nmin[!(Nmin$Year == "2013" & Nmin$JDay == 53),] 
 
 Nmin <- drop_na(Nmin, Nmin)
+
+Nmin$precrop[Nmin$precrop == "chicory"] <- "Chi"
+Nmin$precrop[Nmin$precrop == "fescue"] <- "Fes"
+Nmin$precrop[Nmin$precrop == "lucerne"] <- "Lu"
 
 # making separat tables for trial a and b
 Nmin_A <- filter(Nmin, trial == "trial_A")
@@ -153,14 +159,15 @@ ggplot(NmeanB, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = Nmean,
         legend.title=element_text(size=11))
 
 # with stacked barplots ####
-NmeanA <- NmeanA %>% unite(precrop, precrop_duration, col = "treatment", sep ="-")
+NmeanA <- NmeanA %>% unite(precrop, precrop_duration, col = "treatment", sep ="")
 
 TA_2010 <-  filter(NmeanA, Year == 2010 & main_crop == "Spring Wheat")
 TA_2011 <-  filter(NmeanA, Year == 2011 & main_crop == "Winter Barley")
 TA_2012 <-  filter(NmeanA, Year == 2012 & main_crop == "Winter Oilseed Rape")
 TA_2010$depth = factor(TA_2010$depth, levels = c("105", "75", "45", "30"))
 
-ggplot(TA_2010, aes(x = treatment, y = Nmean, fill = depth)) +
+
+a <- ggplot(TA_2010, aes(x = treatment, y = Nmean, fill = depth)) +
   geom_bar(stat = "identity", position = "stack", colour = "black") +
   facet_grid(Year + main_crop ~ JDay) +
   scale_fill_manual(values = c("khaki", "darkseagreen", "steelblue", "midnightblue"), 
@@ -174,13 +181,13 @@ ggplot(TA_2010, aes(x = treatment, y = Nmean, fill = depth)) +
         plot.title = element_text(size = 15), 
         strip.text.y = element_text(size = 10), 
         strip.text.x = element_text(size = 10),
-        legend.position = c(0.075, 0.25),
+        legend.position = "none",
         legend.text = element_text(size = 10),
         legend.title = element_blank())
-
+a
 
 TA_2011$depth = factor(TA_2011$depth, levels = c("105", "75", "45", "30"))
-ggplot(TA_2011, aes(x = treatment, y = Nmean, fill = depth)) +
+b <- ggplot(TA_2011, aes(x = treatment, y = Nmean, fill = depth)) +
   geom_bar(stat = "identity", position = "stack", colour = "black") +
   facet_grid(Year + main_crop ~ JDay) +
   scale_fill_manual(values = c("khaki", "darkseagreen", "steelblue", "midnightblue"), 
@@ -196,12 +203,13 @@ ggplot(TA_2011, aes(x = treatment, y = Nmean, fill = depth)) +
         plot.title = element_text(size = 15), 
         strip.text.y = element_text(size = 10), 
         strip.text.x = element_text(size = 10),
-        legend.position = c(0.075, 0.25),
+        legend.position = "none",
         legend.text = element_text(size = 10),
         legend.title = element_blank())
+b
 
 TA_2012$depth = factor(TA_2012$depth, levels = c("105", "75", "45", "30"))
-ggplot(TA_2012, aes(x = treatment, y = Nmean, fill = depth)) +
+c <- ggplot(TA_2012, aes(x = treatment, y = Nmean, fill = depth)) +
   geom_bar(stat = "identity", position = "stack", colour = "black") +
   facet_grid(Year + main_crop ~ JDay) +
   scale_fill_manual(values = c("khaki", "darkseagreen", "steelblue", "midnightblue"), 
@@ -220,9 +228,9 @@ ggplot(TA_2012, aes(x = treatment, y = Nmean, fill = depth)) +
         legend.position = c(0.075, 0.25),
         legend.text = element_text(size = 10),
         legend.title = element_blank())
+c
 
-
-
+ggarrange(a, b, c, ncol = 1, nrow = 3)
 
 
 

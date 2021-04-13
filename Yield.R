@@ -3,7 +3,7 @@ library(readxl)
 library(chillR)
 
 yield <- read_excel("Daten_CeFiT_A_B_final.xlsx", sheet = "Ernteertraege")
-yield2 <- read_excel("precrop_data_B.xlsx")
+yield2 <- read_excel("precrop_data_B_revisited.xlsx", skip = 2)
 yield3 <- read_excel("Shoot_data_EH.xlsx", sheet = "Biomass harvest")
 yield5 <- read_excel("Shoot_data_PK.xlsx")
 yield6 <- read_excel("KA-19-A_Endernte_SW.xlsx", skip = 7)
@@ -18,6 +18,8 @@ trialC <- read_excel("data Trial C_2020_06_10.xlsx",
                                    "text", "text", "text", "text", "text", 
                                    "text", "text", "text", "numeric", 
                                    "text", "text"))
+CN_2020_Korn <- read_excel("CN_2020_Korn.xlsx")
+CN_2020_Stroh <- read_excel("CN_2020_Stroh.xlsx")
 
 # a function to remove outliers
 remove_outliers <- function(x, na.rm = TRUE, ...) {
@@ -88,12 +90,43 @@ yield$crop[yield$crop == "WRoggen"] <- "Winter Rye"
 yield$crop[yield$crop == "WWeizen"] <- "Winter Wheat"
 yield$crop[yield$crop == "SWeizen"] <- "Spring Wheat"
 
-# 1.2 precrop_data_B (SW, after 2. precrop phase 2017-2019) ####
+# 1.2 precrop_data_B (SW, after 2. precrop phase 2020) ####
+# selecting the right treatments
 yield2 <- filter(yield2, treatm == "Lu" | treatm == "Fe" | treatm == "Ch")
+
+# changing column names
+names(yield2)[29] <- "grain"
+names(yield2)[31] <- "straw"
+
+# changing the N tables into something i can work with
+CN_2020_Korn[5:10] <- NULL
+CN_2020_Korn[2:3] <- NULL
+names(CN_2020_Korn)[2] <- "N_per_grain"
+
+CN_2020_Stroh[5:10] <- NULL
+CN_2020_Stroh[2:3] <- NULL
+names(CN_2020_Stroh)[2] <- "N_per_straw"
+
+# filtering the plots that we need
+CN_2020_Korn <- na.omit(CN_2020_Korn)
+parzelle <- c(10, 11, 12, 31, 32, 33, 37, 38, 39, 76, 77, 78)
+CN_2020_Korn <- subset(CN_2020_Korn, Parzelle %in% parzelle)
+
+CN_2020_Stroh <- na.omit(CN_2020_Stroh)
+CN_2020_Stroh <- subset(CN_2020_Stroh, Parzelle %in% parzelle)
+
+# adding the tables together
+yield2$per_grain <- CN_2020_Korn$N_per_grain
+yield2$per_straw <- CN_2020_Stroh$N_per_straw
+
+yield2$N_grain <- (yield2$grain*(yield2$per_grain/100))*1000
+yield2$N_residues <- (yield2$straw*(yield2$per_straw/100))*1000
+
+boxplot(yield2$N_residues~yield2$treatment)
 
 # removing outliers for all measured values
 yield2 <- yield2 %>% group_by(Trial, treatm) %>% 
-  mutate_at(vars(DM_mean_mix, N_mean_mix, P_mean_mix, K_mean_mix),
+  mutate_at(vars(grain, straw, N_residues, N_grain),
             funs(remove_outliers))
 # warning because i use an old function that current dplyr patches dont support anymore, still works though
 
@@ -101,10 +134,10 @@ yield2 <- yield2 %>% group_by(Trial, treatm) %>%
 yield2_sample_size <- yield2 %>% group_by(Trial, treatm) %>% 
   summarise_all(funs(sum(!is.na(.))))
 
-#not sure what dm mean mix means, but since this seems to be the only yield with NPK informations i took this one
+# calculating means for each treatment
 yield2 <- yield2 %>% group_by(treatm, Trial) %>%
-  summarise(TM_mix = mean(DM_mean_mix, na.rm = TRUE), N_mix = mean(N_mean_mix, na.rm = TRUE), P_mix = mean(P_mean_mix, na.rm = TRUE), 
-            K_mix = mean(K_mean_mix, na.rm = TRUE))
+  summarise(TM_grain = mean(grain, na.rm = TRUE), TM_residues = mean(straw, na.rm = TRUE), 
+            N_grain = mean(N_grain, na.rm = TRUE), N_residues = mean(N_residues, na.rm = TRUE))
 # -> only 1 precrop duration??
 
 # adding necessary columns
@@ -266,7 +299,7 @@ yield3$precrop[yield3$precrop == "1"] <- "lucerne"
 yield3$precrop[yield3$precrop == "2"] <- "chicory"
 yield3$precrop[yield3$precrop == "3"] <- "fescue"
 
-# 1.5 Trial A 2019 (Sommerweizen, nach 2. Vorfruchtphase 2016-2018) ####
+# 1.5 Trial A 2019 (Sommerweizen, after 2. precrop phase 2019) ####
 # deleting unnecessary columns 
 yield6[4:12] <- NULL
 yield6[10:14] <- NULL
@@ -558,13 +591,21 @@ wrapA$mean_tm <- wrapA$mean_tm/1000
 
 # calculating cumumulative yields for trialB
 wrapB$Dry_Matter[wrapB$Dry_Matter == "Mixed DM"] <- "Residue DM"
-wrapB_cum <- wrapB %>% group_by(treatment, Dry_Matter) %>%
+wrapB_cum <- wrapB
+wrapB_cum <- wrapB_cum[!(wrapB_cum$treatment == "Lu1"),]
+wrapB_cum <- wrapB_cum[!(wrapB_cum$treatment == "Lu3"),]
+wrapB_cum <- wrapB_cum[!(wrapB_cum$treatment == "Fes1"),]
+wrapB_cum <- wrapB_cum[!(wrapB_cum$treatment == "Fes3"),]
+wrapB_cum <- wrapB_cum[!(wrapB_cum$treatment == "Chi1"),]
+wrapB_cum <- wrapB_cum[!(wrapB_cum$treatment == "Chi3"),]
+wrapB_cum <- wrapB_cum %>% group_by(treatment, Dry_Matter) %>%
   summarise(mean_tm = sum(mean_tm))
 
 wrapB_cum$year <- rep("2012-2017", nrow(wrapB_cum))
 wrapB_cum$trial <- rep("trial_A", nrow(wrapB_cum))
 wrapB_cum$crop <- rep("Cummulative", nrow(wrapB_cum))
 wrapB_cum <- wrapB_cum[,c(5, 4, 1, 6, 2, 3)]
+wrapB_cum <- wrapB_cum[!(wrapB_cum$crop == "Spring Wheat" & wrapB_cum$year == 2020),]
 wrapB <- bind_rows(wrapB, wrapB_cum)
 wrapB$mean_tm <- wrapB$mean_tm/1000
 
@@ -708,12 +749,11 @@ yield22$treatment[yield22$treatment == "lucerne-3"] <- "Lu3"
 yield22 <- yield22 %>% unite(crop, year, col = "year", sep =" - ")
 
 # combining grain and straw yield
-yield221 <- yield22 %>% gather(TM_grain, TM_residues, TM_mix, key = "Dry_Matter", value = "value")
-yield221[4:16] <- NULL
+yield221 <- yield22 %>% gather(TM_grain, TM_residues, key = "Dry_Matter", value = "value")
+yield221[4:13] <- NULL
 yield221 <- na.omit(yield221)
 yield221$Dry_Matter[yield221$Dry_Matter == "TM_grain"] <- "Grain DM"
 yield221$Dry_Matter[yield221$Dry_Matter == "TM_residues"] <- "Residue DM"
-yield221$Dry_Matter[yield221$Dry_Matter == "TM_mix"] <- "Residue DM"
 yield221$trial[yield221$trial == "trial_A"] <- "Trial A"
 yield221$trial[yield221$trial == "trial_B"] <- "Trial B"
 
@@ -736,9 +776,9 @@ ggplot(yield221, aes(x = treatment, y = value, fill = Dry_Matter)) +
 
 # combining npk
 npk22 <- yield22 %>% replace(is.na(.), 0) %>% 
-  mutate(N_total = N_grain + N_residues + N_mix, P_total = P_grain + P_residues + P_mix,
-         K_total = P_grain + P_residues + P_mix)
-npk22[4:19] <- NULL
+  mutate(N_total = N_grain + N_residues, P_total = P_grain + P_residues,
+         K_total = P_grain + P_residues)
+npk22[4:15] <- NULL
 
 npk22 <- npk22 %>% gather(N_total, P_total, K_total, key = "nutrient", value = "value")
 npk22$nutrient[npk22$nutrient == "N_total"] <- "N"
