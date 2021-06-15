@@ -183,7 +183,7 @@ trialB <- bind_rows(trialB, TrialB)
 trialA <- bind_rows(trialA, TrialA)
 
 #4. Plot1: TrialA - Lu2 and Ch2 depth differentiated during flowering ####
-#trying to find the last measurement date
+#getting last measurement date
 fm_plot1 <- filter(trialA, Year == "2010" & crop == "fodder mallow")
 fm_plot1 <- filter(fm_plot1, JDay == 230)
 #-> same dates as in the Detailübersicht sheet. last date: 18.08/230
@@ -198,16 +198,41 @@ wb_plot1 <- filter(wb_plot1, JDay == 136)
 
 plot1 <- bind_rows(fm_plot1, sw_plot1, wb_plot1)
 
-#calculating means for each plot, maincrop, date and depth
-plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, precrop, precrop_d) %>% 
+#introducing depth_class, which basically combines 2 measurement depths for a clearer visualization
+plot1 <- transform(plot1, depth = as.numeric(depth))
+
+plot1 <- plot1 %>% mutate(depth_class = case_when(depth <= 10 ~ "1", 
+                                            depth > 10 & depth <= 20 ~ "2",
+                                            depth > 20 & depth <= 30 ~ "3",
+                                            depth > 30 & depth <= 40 ~ "4",
+                                            depth > 40 & depth <= 50 ~ "5",
+                                            depth > 50 & depth <= 60 ~ "6",
+                                            depth > 60 & depth <= 70 ~ "7",
+                                            depth > 70 & depth <= 80 ~ "8",
+                                            depth > 80 & depth <= 90 ~ "9",
+                                            depth > 90 & depth <= 100 ~ "10",
+                                            depth > 100 & depth <= 110 ~ "11",
+                                            depth > 110 & depth <= 120 ~ "12",
+                                            depth > 120 & depth <= 130 ~ "13",
+                                            depth > 130 & depth <= 140 ~ "14",
+                                            depth > 140 & depth <= 150 ~ "15",
+                                            depth > 150 & depth <= 160 ~ "16",
+                                            depth > 160 & depth <= 170 ~ "17",
+                                            depth > 170 & depth <= 180 ~ "18",
+                                            depth > 180 & depth <= 190 ~ "19",
+                                            depth > 190 & depth <= 200 ~ "20",
+                                            ))
+
+#calculating means for each plot, maincrop, date and depth_class
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
 
-#count number of observations/plots
-plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>%
+#count number of observations/plots and depth_class
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>%
   mutate(count = n())
 
-#calculating means for each treatment, year, date and depth
-plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>% 
+#calculating means for each treatment, year, date and depth_class
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD2 = mean(mean_RLD))
 
 #filtering Lu1+2 and Ch1+2 
@@ -225,24 +250,34 @@ plot1 <- plot1[!(plot1$crop == "winter oilseed rape"),]
 plot1$precrop_d[plot1$precrop_d == "1"] <- "1 Precrop Year"
 plot1$precrop_d[plot1$precrop_d == "2"] <- "2 Precrop Years"
 plot1$precrop[plot1$precrop == "1"] <- "Lu"
-plot1$precrop[plot1$precrop == "2"] <- "Ch"
-plot1$precrop[plot1$precrop == "3"] <- "Fe"
+plot1$precrop[plot1$precrop == "2"] <- "Chi"
+plot1$precrop[plot1$precrop == "3"] <- "Fes"
 
-
-plot1 <- transform(plot1, depth = as.numeric(depth), 
-                   precrop = as.factor(precrop), 
-                   precrop_d = as.factor(precrop_d))
+plot1 <- transform(plot1, precrop = as.factor(precrop), 
+                   precrop_d = as.factor(precrop_d), 
+                   depth_class = as.character(depth_class))
 
 colnames(plot1)[5] <- "Precrop"
 
-ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = Precrop)) + 
-  geom_line() +
+#removing depths from 180-200 cm, because of small samplesizes and a better visualization
+plot1 <- plot1[!(plot1$depth_class == "20"),]
+plot1 <- plot1[!(plot1$depth_class == "19"),]
+
+#sorting depth class
+plot1$depth_class <- factor(plot1$depth_class, levels = c("18", "17", "16", "15", "14",
+                                                          "13", "12", "11", "10", "9", "8", "7", "6",
+                                                          "5", "4", "3", "2", "1"))
+
+ggplot(plot1, aes(y = mean_RLD2, x = depth_class, colour = Precrop, group = Precrop, linetype = Precrop)) + 
+  geom_point(aes(shape = Precrop)) + geom_line() + 
   facet_grid(precrop_d ~ Year + crop) +
-  labs(x = bquote("Soil Depth [cm]"), y= "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
+  labs(y = bquote("Soil Depth [cm]"), x = "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
        title = "Trial A") +
   theme_bw() +
   scale_colour_manual(values = c("red1", "steelblue1", "forestgreen")) + 
-  scale_x_reverse()+
+  scale_x_discrete(labels = c("170-180", "160-170", "150-160", "140-150",
+                              "130-140", "120-130", "110-120", "100-110", "90-100", "80-90", "70-80",
+                              "60-70", "50-60", "40-50", "30-40", "20-30", "10-20", "0-10")) +
   coord_flip()+
   theme(axis.text = element_text(size = 12), 
         axis.title.y = element_text(size = 14),
@@ -257,7 +292,7 @@ ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = Precrop)) +
 
 
 #5. Plot2: TrialB - Fe2 depth differentiated during flowering ####
-#finding the last measurement date
+#getting the last measurement date
 fm_plot1 <- filter(trialB, Year == "2012" & crop == "fodder mallow")
 fm_plot1 <- filter(fm_plot1, JDay == 198) #16.07.2012
 
@@ -272,16 +307,42 @@ wosr_plot1 <- filter(wosr_plot1, JDay == 177) #26.06.2013
 
 plot1 <- bind_rows(fm_plot1, sw_plot1, wb_plot1, wosr_plot1)
 
-#calculating means for each plot, maincrop, date and depth
-plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, precrop, precrop_d) %>% 
+
+#introducing depth_class
+plot1 <- transform(plot1, depth = as.numeric(depth))
+
+plot1 <- plot1 %>% mutate(depth_class = case_when(depth <= 10 ~ "1", 
+                                                  depth > 10 & depth <= 20 ~ "2",
+                                                  depth > 20 & depth <= 30 ~ "3",
+                                                  depth > 30 & depth <= 40 ~ "4",
+                                                  depth > 40 & depth <= 50 ~ "5",
+                                                  depth > 50 & depth <= 60 ~ "6",
+                                                  depth > 60 & depth <= 70 ~ "7",
+                                                  depth > 70 & depth <= 80 ~ "8",
+                                                  depth > 80 & depth <= 90 ~ "9",
+                                                  depth > 90 & depth <= 100 ~ "10",
+                                                  depth > 100 & depth <= 110 ~ "11",
+                                                  depth > 110 & depth <= 120 ~ "12",
+                                                  depth > 120 & depth <= 130 ~ "13",
+                                                  depth > 130 & depth <= 140 ~ "14",
+                                                  depth > 140 & depth <= 150 ~ "15",
+                                                  depth > 150 & depth <= 160 ~ "16",
+                                                  depth > 160 & depth <= 170 ~ "17",
+                                                  depth > 170 & depth <= 180 ~ "18",
+                                                  depth > 180 & depth <= 190 ~ "19",
+                                                  depth > 190 & depth <= 200 ~ "20",
+))
+
+#calculating means for each plot, maincrop, date and depth_class
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
 
 #count number of observations/plots
-plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>%
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>%
   mutate(count = n())
 
-#calculating means for each treatment, year, date and depth
-plot1 <- plot1 %>% group_by(crop, JDay, Year, depth, precrop, precrop_d) %>% 
+#calculating means for each treatment, year, date and depth class
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD2 = mean(mean_RLD))
 
 #filtering Lu1+2 and Ch1+2 and their last measurement date (should be flowering????????)
@@ -295,25 +356,37 @@ plot1 <- bind_rows(Lu2, Ch2, Fe2)
 plot1 <- plot1[!(plot1$Year == "2016"),]
 plot1 <- plot1[!(plot1$Year == "2017"),]
 
+# changing variable names
 plot1$precrop_d[plot1$precrop_d == "2"] <- "2 Precrop Years"
 plot1$precrop[plot1$precrop == "1"] <- "Lu"
-plot1$precrop[plot1$precrop == "2"] <- "Ch"
-plot1$precrop[plot1$precrop == "3"] <- "Fe"
+plot1$precrop[plot1$precrop == "2"] <- "Chi"
+plot1$precrop[plot1$precrop == "3"] <- "Fes"
 
-plot1 <- transform(plot1, depth = as.numeric(depth), 
+plot1 <- transform(plot1, depth_class = as.numeric(depth_class), 
                    precrop = as.factor(precrop), 
                    precrop_d = as.factor(precrop_d))
 
 colnames(plot1)[5] <- "Precrop"
 
-ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = Precrop)) + 
-  geom_line() +
+#removing depths from 180-200 cm, because of small samplesizes and a better visualization
+plot1 <- plot1[!(plot1$depth_class == "20"),]
+plot1 <- plot1[!(plot1$depth_class == "19"),]
+
+#sorting depth class
+plot1$depth_class <- factor(plot1$depth_class, levels = c("18", "17", "16", "15", "14",
+                                                          "13", "12", "11", "10", "9", "8", "7", "6",
+                                                          "5", "4", "3", "2", "1"))
+
+ggplot(plot1, aes(y = mean_RLD2, x = depth_class, colour = Precrop, group = Precrop, linetype = Precrop)) + 
+  geom_point(aes(shape = Precrop)) + geom_line() + 
   facet_grid(precrop_d ~ Year + crop) +
-  labs(x = bquote("Soil Depth [cm]"), y= "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
+  labs(y = bquote("Soil Depth [cm]"), x = "Mean Rootlength Density [cm *" ~cm^-3 ~"]", 
        title = "Trial B") +
-  scale_colour_manual(values = c("red1", "steelblue1", "forestgreen")) + 
   theme_bw() +
-  scale_x_reverse()+
+  scale_colour_manual(values = c("red1", "steelblue1", "forestgreen")) + 
+  scale_x_discrete(labels = c("170-180", "160-170", "150-160", "140-150",
+                              "130-140", "120-130", "110-120", "100-110", "90-100", "80-90", "70-80",
+                              "60-70", "50-60", "40-50", "30-40", "20-30", "10-20", "0-10")) +
   coord_flip()+
   theme(axis.text = element_text(size = 12), 
         axis.title.y = element_text(size = 14),
@@ -330,9 +403,11 @@ ggplot(plot1, aes(x = depth, y = mean_RLD2, colour = Precrop)) +
 #creating two depth groups: <30cm and >30cm
 plot1 <- transform(trialA, depth = as.numeric(depth))
 
-plot1 <- plot1 %>% mutate(depth_class = case_when(depth <= 30 ~ "1", 
-                                                    depth > 30 ~ "2") )
-plot1 <- transform(plot1, depth_class = as.factor(depth_class))
+plot1 <- plot1 %>% mutate(depth_class = case_when(depth < 30 ~ "1", 
+                                                  depth >= 30 & depth <= 100  ~ "2", 
+                                                  depth > 100 ~ "3") )
+
+plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
 
 #filtering Lu1+2 and Ch1+2 
 Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
@@ -340,12 +415,11 @@ Fe1 <- filter(plot1, precrop == 3 & precrop_d == 1)
 plot1 <- bind_rows(Ch2, Fe1)
 
 #filtering the dates to check for problems
-
 df1 <- filter(plot1, Year == "2010" & JDay == 208 & crop == "spring wheat")#way more data
 df1 <- filter(plot1, Year == "2010" & JDay == 215 & crop == "spring wheat")#monolith -> raus!
 plot1 <- plot1[!(plot1$crop == "spring wheat" & plot1$JDay == 215),] #removing monolith
 
-#calculating means for each plot, maincrop, date and !!depth_class!!
+#calculating means for each plot, maincrop, date and depth_class
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
 
@@ -372,10 +446,12 @@ plot1$JDay <- plot1$JDay-1
 #formating the df
 plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
 
-plot1$depth_class[plot1$depth_class == "1"] <- "<= 30cm"
-plot1$depth_class[plot1$depth_class == "2"] <- "> 30cm"
-plot1$precrop[plot1$precrop == "2"] <- "Ch2"
-plot1$precrop[plot1$precrop == "3"] <- "Fe1"
+plot1$depth_class[plot1$depth_class == "1"] <- "<=30 cm"
+plot1$depth_class[plot1$depth_class == "2"] <- "30-100 cm"
+plot1$depth_class[plot1$depth_class == "2"] <- ">100 cm"
+
+plot1$precrop[plot1$precrop == "2"] <- "Chi2"
+plot1$precrop[plot1$precrop == "3"] <- "Fes1"
 
 plot1 <- transform(plot1, depth_class = as.factor(depth_class), 
                    Year = as.factor(Year), 

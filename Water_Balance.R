@@ -1,6 +1,9 @@
 library(tidyverse)
 library(readxl)
+library(readODS)
 
+# 1. CWB ####
+# loading tables  ####
 df08 <- read_excel("days_2008_calc korrig.xls", skip = 34)
 df09 <- read_excel("days_2009_calc korrig.xls", skip = 34)
 df10 <- read_excel("days_2010_calc korrig.xls", skip = 34)
@@ -15,6 +18,7 @@ df18 <- read_excel("days_2018_calc korrig.xlsx", skip = 41)
 df19 <- read_excel("days_2019_calc korrig.xlsx", skip = 41)
 df20 <- read_excel("days_2020_calc korrig.xlsx", skip = 41)
 
+# unifying them ####
 names(df08)[20] <- "wasserbilanz"
 names(df09)[20] <- "wasserbilanz"
 names(df10)[20] <- "wasserbilanz"
@@ -91,6 +95,7 @@ df20$wasserbilanz <- as.numeric(df20$wasserbilanz)
 df <- bind_rows(df08, df09, df10, df11, df12,df12, df13, df14, df15, df16, df17, df18, df19, df20)
 df <- na.omit(df)
 
+#plotting ####
 #monthly
 df_months <- df %>% group_by(Year, Month) %>% summarise(sum_wasserbilanz = sum(wasserbilanz))
 
@@ -143,4 +148,17 @@ ggplot(df_cat, aes(x = group, y = sum_wasserbilanz)) +
         plot.title = element_text(size = 15), 
         strip.text.y = element_text(size = 13), 
         strip.text.x = element_text(size = 13))
+
+
+
+
+
+
+
+
+
+
+
+
+
 

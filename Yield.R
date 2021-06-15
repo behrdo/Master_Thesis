@@ -20,6 +20,8 @@ trialC <- read_excel("data Trial C_2020_06_10.xlsx",
                                    "text", "text"))
 CN_2020_Korn <- read_excel("CN_2020_Korn.xlsx")
 CN_2020_Stroh <- read_excel("CN_2020_Stroh.xlsx")
+P_15_Korn_TA <- read_excel("PK_15_Korn_TA.xls", skip = 3)
+K_15_Korn_TA <- read_excel("PK_15_Korn_TA.xls", sheet = "K ", skip = 3)
 
 # a function to remove outliers
 remove_outliers <- function(x, na.rm = TRUE, ...) {
@@ -55,6 +57,30 @@ yield[14] <- NULL
 yield[8] <- NULL
 yield[15] <- NULL
 yield[10] <- NULL
+
+# adding P and K values for TA 2015
+P_15_Korn_TA[2:7] <- NULL
+K_15_Korn_TA[2:5] <- NULL
+
+K_15_Korn_TA <- na.omit(K_15_Korn_TA)
+P_15_Korn_TA <- na.omit(P_15_Korn_TA)
+
+df <- filter(yield, year == 2015 & trial == "trial_A" & crop == "WGerste")
+yield <- yield[!(yield$crop == "WGerste" & yield$year == 2015 & yield$trial == "trial_A"),]
+
+df <- arrange(df, plot_ID)
+
+df <- bind_cols(df, K_15_Korn_TA)
+df <- bind_cols(df, P_15_Korn_TA)
+df[18] <- NULL
+df[16] <- NULL
+df[10:11] <- NULL
+names(df)[14] <- "K_grain"
+names(df)[15] <- "P_grain"
+
+df <- df[,c(1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 14, 10, 11, 12, 13)]
+
+yield <- bind_rows(yield, df)
 
 # calculating total NPK values
 yield <- mutate(yield, N_grain = TM_grain*(N_grain/100), P_grain = TM_grain*(P_grain/100), K_grain = TM_grain*(K_grain/100), 
