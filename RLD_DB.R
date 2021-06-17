@@ -1,6 +1,11 @@
 library(tidyverse)
 library(readxl)
 library(chillR)
+library(broom)
+library(rstatix)
+library(psych)
+library(rcompanion)
+
 
 #importing the df
 RLD <- read_excel("Daten_CeFiT_A_B_final.xlsx", 
@@ -223,6 +228,211 @@ plot1 <- plot1 %>% mutate(depth_class = case_when(depth <= 10 ~ "1",
                                             depth > 190 & depth <= 200 ~ "20",
                                             ))
 
+#removing depths from 180-200 cm, because of small samplesizes and a better visualization
+plot1 <- plot1[!(plot1$depth_class == "20"),]
+plot1 <- plot1[!(plot1$depth_class == "19"),]
+
+#filtering Lu1+2 and Ch1+2 
+Lu1 <- filter(plot1, precrop == 1 & precrop_d == 1)
+Ch1 <- filter(plot1, precrop == 2 & precrop_d == 1)
+Lu2 <- filter(plot1, precrop == 1 & precrop_d == 2)
+Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
+Fe1 <- filter(plot1, precrop == 3 & precrop_d == 1)
+
+plot1 <- bind_rows(Lu1, Ch1, Lu2, Ch2, Fe1)
+
+#statistics: 1. Checking for normality
+shapiro <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>%
+  summarise(statistic = shapiro.test(RLD)$statistic,
+            p.value = shapiro.test(RLD)$p.value)
+# -> most groups are not normally distributed => non parametric tests
+
+#plot1 <- transform(plot1, precrop = as.factor(precrop), 
+#                   precrop_d = as.factor(precrop_d), 
+#                   depth_class = as.factor(depth_class),
+#                   Year = as.factor(Year),
+#                   crop = as.factor(crop),
+#                   JDay = as.factor(JDay))
+
+
+plot1$precrop[plot1$precrop == "1"] <- "Lu"
+plot1$precrop[plot1$precrop == "2"] <- "Chi"
+plot1$precrop[plot1$precrop == "3"] <- "Fes"
+
+#statistics: 2. Kruskal-Wallis test for the 1-Year Precrops (since 3 groups)
+KW <- filter(plot1, precrop_d == 1)
+KW <- KW %>% group_by(depth_class, crop) %>% kruskal_test(RLD ~ precrop)
+# -> some groups have p values below 0.05 and thus differ -> WIlcoxon-Test
+
+KW <- filter(plot1, precrop_d == 1)
+KW <- KW %>% group_by(depth_class, crop) %>% pairwise_wilcox_test(RLD ~ precrop, paired = FALSE, 
+                                                                  p.adjust.method = "bonferroni")
+
+get_pwc_label(KW, type = "expression", p.col = "p.adj")
+
+#adding significance letters according to the wilcoxon test to the df ####
+plot1 <- mutate(plot1, letters = case_when(crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 1 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 1 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 1 ~ "b", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 2 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 2 ~ "a",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 2 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 3 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 3 ~ "a",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 3 ~ "b", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 4 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 4 ~ "a",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 4 ~ "b", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 5 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 5 ~ "",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 5 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 6 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 6 ~ "",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 6 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 7 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 7 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 7 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 8 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 8 ~ "",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 8 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 9 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 9 ~ "",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 9 ~ "",  
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 10 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 10 ~ "ab",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 10 ~ "b", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 11 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 11 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 11 ~ "b", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 12 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 12 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 12 ~ "c", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 13 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 13 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 13 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 14 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 14 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 14 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 15 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 15 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 15 ~ "a",
+                                           crop == "fodder mallow" & precrop == "Chi" & precrop_d == 1 & depth_class == 16 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes" & precrop_d == 1 & depth_class == 16 ~ "b",
+                                           crop == "fodder mallow" & precrop == "Lu" & precrop_d == 1 & depth_class == 16 ~ "a", 
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 1 ~ "a", 
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 1 ~ "b",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 1 ~ "b",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 2 ~ "", 
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 2 ~ "",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 2 ~ "", 
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 3 ~ "a", 
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 3 ~ "b",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 3 ~ "a",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 4 ~ "a", 
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 4 ~ "b",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 4 ~ "a",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 5 ~ "a",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 5 ~ "b",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 5 ~ "c",  
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 6 ~ "ab",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 6 ~ "a",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 6 ~ "b",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 7 ~ "a",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 7 ~ "b",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 7 ~ "a",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 8 ~ "a",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 8 ~ "b",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 8 ~ "c",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 9 ~ "ab",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 9 ~ "a",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 9 ~ "b",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 10 ~ "",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 10 ~ "",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 10 ~ "",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 11 ~ "",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 11 ~ "",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 11 ~ "",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 12 ~ "a",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 12 ~ "b",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 12 ~ "a",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 13 ~ "a",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 13 ~ "b",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 13 ~ "a",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 14 ~ "ab",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 14 ~ "a",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 14 ~ "b",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 15 ~ "a",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 15 ~ "ab",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 15 ~ "b",
+                                           crop == "spring wheat" & precrop == "Chi" & precrop_d == 1 & depth_class == 16 ~ "",
+                                           crop == "spring wheat" & precrop == "Fes" & precrop_d == 1 & depth_class == 16 ~ "",
+                                           crop == "spring wheat" & precrop == "Lu" & precrop_d == 1 & depth_class == 16 ~ "",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 1 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 1 ~ "b",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 1 ~ "a",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 2 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 2 ~ "b",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 2 ~ "a",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 3 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 3 ~ "a",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 3 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 4 ~ "ab",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 4 ~ "a",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 4 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 5 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 5 ~ "b",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 5 ~ "a",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 6 ~ "",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 6 ~ "",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 6 ~ "",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 7 ~ "",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 7 ~ "",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 7 ~ "",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 8 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 8 ~ "b",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 8 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 9 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 9 ~ "b",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 9 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 10 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 10 ~ "b",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 10 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 11 ~ "",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 11 ~ "",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 11 ~ "",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 12 ~ "",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 12 ~ "",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 12 ~ "",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 13 ~ "",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 13 ~ "",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 13 ~ "",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 14 ~ "",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 14 ~ "",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 14 ~ "",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 15 ~ "",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 15 ~ "",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 15 ~ "",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 16 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 16 ~ "b",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 16 ~ "c",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 17 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 17 ~ "b",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 17 ~ "a",
+                                           crop == "winter barley" & precrop == "Chi" & precrop_d == 1 & depth_class == 18 ~ "a",
+                                           crop == "winter barley" & precrop == "Fes" & precrop_d == 1 & depth_class == 18 ~ "b",
+                                           crop == "winter barley" & precrop == "Lu" & precrop_d == 1 & depth_class == 18 ~ "a",
+                                           ))
+
+#####
+
+#statistics: 3. Wilcoxon-Test for the 2YPrecrops (since Fes is missing and we have only 2 groups)
+WT <- filter(plot1, precrop_d == 2)
+WT <- WT %>% group_by(depth_class, crop) %>% pairwise_wilcox_test(RLD ~ precrop, paired = FALSE, 
+                                                                  p.adjust.method = "bonferroni")
+
+#removing winter oilseed rape since no data for precrop 1
+plot1 <- plot1[!(plot1$crop == "winter oilseed rape"),]
+
 #calculating means for each plot, maincrop, date and depth_class
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD = mean(RLD))
@@ -235,18 +445,7 @@ plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %
 plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RLD2 = mean(mean_RLD))
 
-#filtering Lu1+2 and Ch1+2 
-Lu1 <- filter(plot1, precrop == 1 & precrop_d == 1)
-Ch1 <- filter(plot1, precrop == 2 & precrop_d == 1)
-Lu2 <- filter(plot1, precrop == 1 & precrop_d == 2)
-Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
-Fe1 <- filter(plot1, precrop == 3 & precrop_d == 1)
-
-plot1 <- bind_rows(Lu1, Ch1, Lu2, Ch2, Fe1)
-
-#removing winter oilseed rape since no data for precrop 1
-plot1 <- plot1[!(plot1$crop == "winter oilseed rape"),]
-
+#changing variable names
 plot1$precrop_d[plot1$precrop_d == "1"] <- "1 Precrop Year"
 plot1$precrop_d[plot1$precrop_d == "2"] <- "2 Precrop Years"
 plot1$precrop[plot1$precrop == "1"] <- "Lu"
@@ -259,10 +458,6 @@ plot1 <- transform(plot1, precrop = as.factor(precrop),
 
 colnames(plot1)[5] <- "Precrop"
 
-#removing depths from 180-200 cm, because of small samplesizes and a better visualization
-plot1 <- plot1[!(plot1$depth_class == "20"),]
-plot1 <- plot1[!(plot1$depth_class == "19"),]
-
 #sorting depth class
 plot1$depth_class <- factor(plot1$depth_class, levels = c("18", "17", "16", "15", "14",
                                                           "13", "12", "11", "10", "9", "8", "7", "6",
@@ -271,7 +466,7 @@ plot1$depth_class <- factor(plot1$depth_class, levels = c("18", "17", "16", "15"
 ggplot(plot1, aes(y = mean_RLD2, x = depth_class, colour = Precrop, group = Precrop, linetype = Precrop)) + 
   geom_point(aes(shape = Precrop)) + geom_line() + 
   facet_grid(precrop_d ~ Year + crop) +
-  labs(y = bquote("Soil Depth [cm]"), x = "Mean Rootlength Density [cm " ~cm^-3 ~"]", 
+  labs(x = bquote("Soil Depth [cm]"), y = "Mean Rootlength Density [cm " ~cm^-3 ~"]", 
        title = "Trial A") +
   theme_bw() +
   scale_colour_manual(values = c("red1", "steelblue1", "forestgreen")) + 
@@ -332,6 +527,9 @@ plot1 <- plot1 %>% mutate(depth_class = case_when(depth <= 10 ~ "1",
                                                   depth > 180 & depth <= 190 ~ "19",
                                                   depth > 190 & depth <= 200 ~ "20",
 ))
+
+#statistics table
+statTBd <- plot1
 
 #calculating means for each plot, maincrop, date and depth_class
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
@@ -571,6 +769,9 @@ plot1 <- bind_rows(Ch2, Fe1)
 #filtering the dates to check for problems
 plot1 <- plot1[!(plot1$crop == "spring wheat" & plot1$JDay == 215),] #removing monolith
 
+#statistics table
+statTAt <- plot1
+
 #calculating mean RL for each plot, maincrop, date and depth
 plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, depth_class, precrop, precrop_d) %>% 
   summarise(mean_RL = mean(RL_total))
@@ -601,17 +802,21 @@ plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
 plot1$precrop[plot1$precrop == "2"] <- "Ch2"
 plot1$precrop[plot1$precrop == "3"] <- "Fe1"
 
-plot1 <- transform(plot1, depth_class = as.factor(depth_class), 
+plot1 <- transform(plot1, depth_class = as.numeric(depth_class), 
                    Year = as.factor(Year), 
                    precrop = as.factor(precrop), 
                    JDay = as.numeric(JDay))
 
-plot1$depth_class <- factor(plot1$depth_class, levels = c("1", "2", "3"))
+plot1$depth_class[plot1$depth_class == "1"] <- "<30 cm"
+plot1$depth_class[plot1$depth_class == "2"] <- "30-100 cm"
+plot1$depth_class[plot1$depth_class == "3"] <- ">100 cm"
+
+plot1$depth_class <- factor(plot1$depth_class, levels = c("<30 cm", "30-100 cm", ">100 cm"))
 
 ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = mean_RL2, colour = precrop, linetype = depth_class, shape = precrop)) + 
   geom_line() + geom_point() +
   facet_grid(cols = vars(Year, crop)) +
-  labs(y = "Total Rootlength [km " ~m^-2 ~"]", 
+  labs(y = "Total Rootlength [km " ~m^-2 ~"]", x = "Soil Depth [cm]",
        title = "Trial A") +
   scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
   theme_bw() +
@@ -634,7 +839,7 @@ plot1 <- plot1 %>% mutate(depth_class = case_when(depth < 30 ~ "1",
                                                   depth >= 30 & depth <= 125  ~ "2", 
                                                   depth > 125 ~ "3") )
 
-plot1 <- transform(plot1, depth_class = as.factor(depth_class))
+plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
 
 #filtering the dates to check for problems
 plot1 <- plot1[!(plot1$crop == "spring wheat" & plot1$JDay == 215),] #removing monolith
@@ -674,39 +879,40 @@ plot1 <- bind_rows(df2012, df2013)
 plot1 <- plot1[!(plot1$Year == "2013" & plot1$JDay == 121),] 
 plot1 <- plot1[!(plot1$Year == "2013" & plot1$JDay == 153),] 
 
-plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
-
-plot1$depth_class[plot1$depth_class == "1"] <- "< 30cm"
-plot1$depth_class[plot1$depth_class == "3"] <- "30 - 125cm"
-plot1$depth_class[plot1$depth_class == "2"] <- "> 125cm"
 plot1$precrop[plot1$precrop == "2"] <- "Ch2"
 plot1$precrop[plot1$precrop == "3"] <- "Fe2"
 
-plot1 <- transform(plot1, depth_class = as.factor(depth_class), 
+plot1 <- transform(plot1, depth_class = as.numeric(depth_class), 
                    Year = as.factor(Year), 
                    precrop = as.factor(precrop), 
                    JDay = as.numeric(JDay))
 
-colnames(plot1)[4] <- "Depth"
+plot1$depth_class[plot1$depth_class == "1"] <- "<30 cm"
+plot1$depth_class[plot1$depth_class == "2"] <- "30-100 cm"
+plot1$depth_class[plot1$depth_class == "3"] <- ">100 cm"
+
+plot1$depth_class <- factor(plot1$depth_class, levels = c("<30 cm", "30-100 cm", ">100 cm"))
+
 colnames(plot1)[5] <- "Precrop"
 
-ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = mean_RL2, colour = Precrop, linetype = Depth, shape = Precrop)) + 
+ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = mean_RL2, colour = Precrop, linetype = depth_class, shape = Precrop)) + 
   geom_line() + geom_point() +
   facet_grid(cols = vars(Year, crop)) +
-  labs(y = "Mean Rootlength [unit??]", 
+  labs(y = "Total Rootlength [km " ~m^-2 ~"]", x = "Soil Depth [cm]",
        title = "Trial B") +
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
   theme_bw() +
   scale_colour_manual(values = c("red1", "steelblue1")) + 
-  scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
   theme(axis.text = element_text(size = 12), 
         axis.title.y = element_text(size = 14),
         axis.title.x = element_blank(),
         plot.title = element_text(size = 15), 
         strip.text.y = element_text(size = 13), 
         strip.text.x = element_text(size = 13),
-        legend.position = c(0.09, 0.75),
         legend.text = element_text(size = 12),
-        legend.title=element_text(size=14))
+        legend.title=element_blank(),
+        legend.position = c(0.09, 0.82),)
+
 
 
 #10.Plot7: TrialA - share of roots in biopores ####
@@ -783,6 +989,37 @@ ggplot(plot1, aes(x = depth, y = percentage, colour = Precrop)) +
         legend.text = element_text(size = 12),
         legend.title=element_text(size=14)) +
   theme_bw()
+
+
+# statistics ####
+#TrialA - depth differentiated
+statTAd
+
+#filtering Lu1+2 and Ch1+2 
+Lu1 <- filter(statTAd, precrop == 1 & precrop_d == 1)
+Ch1 <- filter(statTAd, precrop == 2 & precrop_d == 1)
+Lu2 <- filter(plot1, precrop == 1 & precrop_d == 2)
+Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
+Fe1 <- filter(plot1, precrop == 3 & precrop_d == 1)
+
+plot1 <- bind_rows(Lu1, Ch1, Lu2, Ch2, Fe1)
+
+#removing winter oilseed rape since no data for precrop 1
+plot1 <- plot1[!(plot1$crop == "winter oilseed rape"),]
+
+#removing depths from 180-200 cm, because of small samplesizes and a better visualization
+plot1 <- plot1[!(plot1$depth_class == "20"),]
+plot1 <- plot1[!(plot1$depth_class == "19"),]
+
+
+
+
+
+
+
+
+
+
 
 
 
