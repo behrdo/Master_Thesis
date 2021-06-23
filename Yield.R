@@ -1,6 +1,7 @@
 library(tidyverse)
 library(readxl)
 library(chillR)
+library(rstatix)
 
 yield <- read_excel("Daten_CeFiT_A_B_final.xlsx", sheet = "Ernteertraege")
 yield2 <- read_excel("precrop_data_B_revisited.xlsx", skip = 2)
@@ -58,7 +59,7 @@ yield[8] <- NULL
 yield[15] <- NULL
 yield[10] <- NULL
 
-# adding P and K values for TA 2015
+# adding P and K values for TA 2015 from the data.frames P_15_Korn_TA and K_15_Korn_TA
 P_15_Korn_TA[2:7] <- NULL
 K_15_Korn_TA[2:5] <- NULL
 
@@ -863,7 +864,7 @@ TrialB_2015_NPK <- filter(yield_meanpk, trial == "trial_B" & year == 2015)
 TrialB_2016_NPK <- filter(yield_meanpk, trial == "trial_B" & year == 2016)
 TrialB_2017_NPK <- filter(yield_meanpk, trial == "trial_B" & year == 2017)
 
-# plotting TrialA yield ####
+# plotting TrialA yield
 # results of the first maincrop year
 #TrialA_2010$treatment <-  factor(TrialA_2010$treatment, levels = c("Fescue 1", "Fescue 2", "Chicory 2", "Lucerne 2"))
 
@@ -988,7 +989,7 @@ ggplot(TrialA_2015, aes(x = treatment, y = mean_tm, fill = Dry_Matter)) +
         legend.position = "bottom", 
         legend.title = element_blank())
 
-# plotting TrialB yield ####
+# plotting TrialB yield
 #Tb 2012
 # TrialB_2012$treatment <-  factor(TrialB_2012$treatment, levels = c("Fescue 1", "Fescue 2", "Chicory 2", "Lucerne 2"))
 # TrialB_2012$crop <- factor(TrialB_2012$crop, levels = c("Winter Rye", "Winter Oilseed Rape"))
@@ -1115,7 +1116,7 @@ ggplot(TrialB_2017, aes(x = treatment, y = mean_tm, fill = Dry_Matter)) +
         legend.position = "bottom", 
         legend.title = element_blank())
 
-# plotting TA NPK ####
+# plotting TA NPK
 #TA 2010
 TrialA_2010_NPK$treatment <-  factor(TrialA_2010_NPK$treatment, levels = c("Fescue 1", "Fescue 2", "Chicory 2", "Lucerne 2"))
 TrialA_2010_NPK$nutrients <-  factor(TrialA_2010_NPK$nutrients, levels = c("mean_grainN", "mean_grainP", "mean_grainK"))
@@ -1248,7 +1249,7 @@ ggplot(TrialA_2015_NPK, aes(x = treatment, y = mean_nutrient, fill = nutrients))
         legend.position = "bottom", 
         legend.title = element_blank())
 
-# plotting TB NPK ####
+# plotting TB NPK
 #TB 2012
 TrialB_2012_NPK$treatment <-  factor(TrialB_2012_NPK$treatment, levels = c("Fescue 1", "Fescue 2", "Chicory 2", "Lucerne 2"))
 TrialB_2012_NPK$nutrients <-  factor(TrialB_2012_NPK$nutrients, levels = c("mean_grainN", "mean_grainP", "mean_grainK"))

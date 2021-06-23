@@ -915,15 +915,14 @@ plot1$precrop[plot1$precrop == "3"] <- "Fes1"
 #filtering the dates to check for problems
 plot1 <- plot1[!(plot1$crop == "spring wheat" & plot1$JDay == 215),] #removing monolith
 
-#statistics 1: normality check
 #statistics: 1. Checking for normality
 shapiro <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>%
-  summarise(statistic = shapiro.test(RLD)$statistic,
-            p.value = shapiro.test(RLD)$p.value)
+  summarise(statistic = shapiro.test(RL_total)$statistic,
+            p.value = shapiro.test(RL_total)$p.value)
 # -> most groups are not normally distributed => non parametric tests
 
 #statistics: 2. Wilcoxon-Test
-WT <- plot1 %>% group_by(depth_class, crop, JDay) %>% pairwise_wilcox_test(RLD ~ precrop, paired = FALSE, 
+WT <- plot1 %>% group_by(depth_class, crop, JDay) %>% pairwise_wilcox_test(RL_total ~ precrop, paired = FALSE, 
                                                                   p.adjust.method = "bonferroni")
 
 #adding significance levels to the precrops, based on WT
@@ -971,24 +970,78 @@ plot1 <- mutate(plot1, letters = case_when(crop == "fodder mallow" & precrop == 
                                            crop == "spring wheat" & precrop == "Fes1" & depth_class == 2 & JDay == 208 ~ "b", 
                                            crop == "spring wheat" & precrop == "Chi2" & depth_class == 3 & JDay == 208 ~ "a", 
                                            crop == "spring wheat" & precrop == "Fes1" & depth_class == 3 & JDay == 208 ~ "b",
-                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 208 ~ "a", 
-                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 208 ~ "b", 
-                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 208 ~ "a", 
-                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 208 ~ "b", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 94 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 94 ~ "b", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 94 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 94 ~ "", 
                                            crop == "winter barley" & precrop == "Chi2" & depth_class == 3 & JDay == 208 ~ "a", 
                                            crop == "winter barley" & precrop == "Fes1" & depth_class == 3 & JDay == 208 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 116 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 116 ~ "b", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 116 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 116 ~ "b", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 3 & JDay == 116 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 3 & JDay == 116 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 136 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 136 ~ "b", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 136 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 136 ~ "b", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 3 & JDay == 136 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 3 & JDay == 136 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 161 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 161 ~ "b", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 161 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 161 ~ "b", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 3 & JDay == 161 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 3 & JDay == 161 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 182 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 182 ~ "b", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 182 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 182 ~ "", 
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 3 & JDay == 182 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 3 & JDay == 182 ~ "b",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 86 ~ "a", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 86 ~ "b", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 86 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 86 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 86 ~ "a", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 86 ~ "b",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 129 ~ "a", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 129 ~ "b", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 129 ~ "a", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 129 ~ "b", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 129 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 129 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 142 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 142 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 142 ~ "a", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 142 ~ "b", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 142 ~ "a", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 142 ~ "b",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 150 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 150 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 150 ~ "a", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 150 ~ "b", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 150 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 150 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 163 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 163 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 163 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 163 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 163 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 163 ~ "",
 ))
 
 #calculating mean RL for each plot, maincrop, date and depth
-plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, depth_class, precrop, precrop_d) %>% 
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, depth_class, precrop, precrop_d, letters) %>% 
   summarise(mean_RL = mean(RL_total))
 
 #calculating total RL for each plot, maincrop, date and depth_class
-plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d, letters) %>% 
   summarise(total_RL = sum(mean_RL))
 
 #calculating means for each treatment, year, date and depth_class
-plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d, letters) %>% 
   summarise(mean_RL2 = mean(total_RL))
 
 #checking if JDays are fine (used a leap year at the beginning so they are all 1 off)
@@ -1023,6 +1076,8 @@ ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = mean_RL
   labs(y = "Total Rootlength [km " ~m^-2 ~"]", x = "Soil Depth [cm]",
        title = "Trial A") +
   scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
+  geom_text_repel(aes(label = letters), nudge_y = 0.25, show.legend = FALSE, direction = c("x"), 
+                  segment.colour = NA) +
   theme_bw() +
   scale_colour_manual(values = c("red1", "steelblue1")) + 
   theme(axis.text = element_text(size = 12), 
@@ -1035,7 +1090,6 @@ ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = mean_RL
         legend.title=element_blank(),
         legend.position = c(0.09, 0.82),)
 
-
 #9. Plot6: TrialB - Ch2 and Fe2 on different dates (RL) ####
 plot1 <- transform(trialB, depth = as.numeric(depth))
 
@@ -1045,46 +1099,159 @@ plot1 <- plot1 %>% mutate(depth_class = case_when(depth < 30 ~ "1",
 
 plot1 <- transform(plot1, depth_class = as.numeric(depth_class))
 
-#filtering the dates to check for problems
-plot1 <- plot1[!(plot1$crop == "spring wheat" & plot1$JDay == 215),] #removing monolith
-
-#calculating mean RL for each plot, maincrop, date and depth
-plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, depth_class, precrop, precrop_d) %>% 
-  summarise(mean_RL = mean(RL_total))
-
-#calculating total RL for each plot, maincrop, date and depth_class
-plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d) %>% 
-  summarise(total_RL = sum(mean_RL))
-
-#calculating means for each treatment, year, date and depth_class
-plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>% 
-  summarise(mean_RL2 = mean(total_RL))
-
 #filtering Lu1+2 and Ch1+2 and their last measurement date (should be flowering????????)
 Ch2 <- filter(plot1, precrop == 2 & precrop_d == 2)
 Fe1 <- filter(plot1, precrop == 3 & precrop_d == 2)
 
 plot1 <- bind_rows(Ch2, Fe1)
 
-plot1$JDay <- plot1$JDay-1
-
-#checking if JDays are fine (used a leap year at the beginning so they are all 1 off)
-df2012 <- filter(plot1, Year == 2012)
-df2013 <- filter(plot1, Year == 2013)
-
-df2012$Date <- as.Date(df2012$JDay, "2012-01-01")
-df2013$Date <- as.Date(df2013$JDay, "2013-01-01")
-#same problem as in trialA -> fixed this above
-
-#to better detect which dates strangely spike in 2013, i decided to keep the normal dates for now
-plot1 <- bind_rows(df2012, df2013)
+plot1$precrop[plot1$precrop == "2"] <- "Chi2"
+plot1$precrop[plot1$precrop == "3"] <- "Fes1"
 
 #removing 02.05(121) and 03.06(153) (both monolith methods)
 plot1 <- plot1[!(plot1$Year == "2013" & plot1$JDay == 121),] 
 plot1 <- plot1[!(plot1$Year == "2013" & plot1$JDay == 153),] 
 
-plot1$precrop[plot1$precrop == "2"] <- "Ch2"
-plot1$precrop[plot1$precrop == "3"] <- "Fe2"
+#filtering the dates to check for problems
+plot1 <- plot1[!(plot1$crop == "spring wheat" & plot1$JDay == 215),] #removing monolith
+plot1 <- plot1[!(plot1$crop == "spring wheat" & plot1$JDay == 206),] #only measured for some depths and strange values (very low compared to other dates)
+plot1 <- plot1[!(plot1$crop == "winter barley" & plot1$JDay == 122),] #only measured for some depths and strange values (very high)
+plot1 <- plot1[!(plot1$crop == "winter barley" & plot1$JDay == 154),] #only measured for some depths and strange values (very high)
+plot1 <- plot1[!(plot1$crop == "winter oilseed rape" & plot1$JDay == 122),] #only measured for some depths and strange values (very high)
+
+#removing measurements with only 0 as RL results (shapiro wont work otherwise)
+statist <- plot1[!(plot1$depth_class == "3" & plot1$crop == "fodder mallow" & plot1$JDay == "186"),]
+statist <- statist[!(statist$depth_class == "3" & statist$crop == "fodder mallow" & statist$JDay == "198"),]
+statist <- statist[!(statist$depth_class == "3" & statist$crop == "spring wheat" & statist$JDay == "174"),]
+statist <- statist[!(statist$depth_class == "3" & statist$crop == "winter barley" & statist$JDay == "100"),]
+
+#statistics: 1. Checking for normality
+shapiro <- statist %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d) %>%
+  summarise(statistic = shapiro.test(RL_total)$statistic,
+            p.value = shapiro.test(RL_total)$p.value)
+# -> most groups are not normally distributed => non parametric tests
+
+#statistics: 2. Wilcoxon-Test
+WT <- statist %>% group_by(depth_class, crop, JDay) %>% pairwise_wilcox_test(RL_total ~ precrop, paired = FALSE, 
+                                                                           p.adjust.method = "bonferroni")
+
+#adding statistics to the main df
+plot1 <- mutate(plot1, letters = case_when(crop == "fodder mallow" & precrop == "Chi2" & depth_class == 1 & JDay == 129 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 1 & JDay == 129 ~ "",
+                                           crop == "fodder mallow" & precrop == "Chi2" & depth_class == 2 & JDay == 129 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 2 & JDay == 129 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Chi2" & depth_class == 1 & JDay == 142 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 1 & JDay == 142 ~ "",
+                                           crop == "fodder mallow" & precrop == "Chi2" & depth_class == 2 & JDay == 142 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 2 & JDay == 142 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Chi2" & depth_class == 1 & JDay == 170 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 1 & JDay == 170 ~ "",
+                                           crop == "fodder mallow" & precrop == "Chi2" & depth_class == 2 & JDay == 170 ~ "a", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 2 & JDay == 170 ~ "b", 
+                                           crop == "fodder mallow" & precrop == "Chi2" & depth_class == 1 & JDay == 186 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 1 & JDay == 186 ~ "",
+                                           crop == "fodder mallow" & precrop == "Chi2" & depth_class == 2 & JDay == 186 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 2 & JDay == 186 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Chi2" & depth_class == 1 & JDay == 198 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 1 & JDay == 198 ~ "",
+                                           crop == "fodder mallow" & precrop == "Chi2" & depth_class == 2 & JDay == 198 ~ "", 
+                                           crop == "fodder mallow" & precrop == "Fes1" & depth_class == 2 & JDay == 198 ~ "", 
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 1 & JDay == 128 ~ "", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 1 & JDay == 128 ~ "",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 2 & JDay == 128 ~ "a", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 2 & JDay == 128 ~ "b",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 1 & JDay == 142 ~ "", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 1 & JDay == 142 ~ "",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 2 & JDay == 142 ~ "a", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 2 & JDay == 142 ~ "b",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 1 & JDay == 157 ~ "", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 1 & JDay == 157 ~ "",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 2 & JDay == 157 ~ "", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 2 & JDay == 157 ~ "",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 1 & JDay == 174 ~ "a", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 1 & JDay == 174 ~ "b",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 2 & JDay == 174 ~ "", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 2 & JDay == 174 ~ "",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 1 & JDay == 198 ~ "", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 1 & JDay == 198 ~ "",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 2 & JDay == 198 ~ "", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 2 & JDay == 198 ~ "",
+                                           crop == "spring wheat" & precrop == "Chi2" & depth_class == 3 & JDay == 198 ~ "", 
+                                           crop == "spring wheat" & precrop == "Fes1" & depth_class == 3 & JDay == 198 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 100 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 100 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 100 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 100 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 114 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 114 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 114 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 114 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 3 & JDay == 114 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 3 & JDay == 114 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 133 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 133 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 133 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 133 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 3 & JDay == 133 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 3 & JDay == 133 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 147 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 147 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 147 ~ "a", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 147 ~ "b",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 3 & JDay == 147 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 3 & JDay == 147 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 1 & JDay == 170 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 1 & JDay == 170 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 2 & JDay == 170 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 2 & JDay == 170 ~ "",
+                                           crop == "winter barley" & precrop == "Chi2" & depth_class == 3 & JDay == 170 ~ "", 
+                                           crop == "winter barley" & precrop == "Fes1" & depth_class == 3 & JDay == 170 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 105 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 105 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 105 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 105 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 105 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 105 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 116 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 116 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 116 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 116 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 116 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 116 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 141 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 141 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 141 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 141 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 141 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 141 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 163 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 163 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 163 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 163 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 163 ~ "a", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 163 ~ "b",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 1 & JDay == 177 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 1 & JDay == 177 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 2 & JDay == 177 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 2 & JDay == 177 ~ "",
+                                           crop == "winter oilseed rape" & precrop == "Chi2" & depth_class == 3 & JDay == 177 ~ "", 
+                                           crop == "winter oilseed rape" & precrop == "Fes1" & depth_class == 3 & JDay == 177 ~ "",
+))
+
+#calculating mean RL for each plot, maincrop, date and depth
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth, depth_class, precrop, precrop_d, letters) %>% 
+  summarise(mean_RL = mean(RL_total))
+
+#calculating total RL for each plot, maincrop, date and depth_class
+plot1 <- plot1 %>% group_by(crop, JDay, Year, plot_ID, depth_class, precrop, precrop_d, letters) %>% 
+  summarise(total_RL = sum(mean_RL))
+
+#calculating means for each treatment, year, date and depth_class
+plot1 <- plot1 %>% group_by(crop, JDay, Year, depth_class, precrop, precrop_d, letters) %>% 
+  summarise(mean_RL2 = mean(total_RL))
+
+#checking if JDays are fine (used a leap year at the beginning so they are all 1 off)
+plot1$JDay <- plot1$JDay-1
 
 plot1 <- transform(plot1, depth_class = as.numeric(depth_class), 
                    Year = as.factor(Year), 
@@ -1099,13 +1266,15 @@ plot1$depth_class <- factor(plot1$depth_class, levels = c("<30 cm", "30-100 cm",
 
 colnames(plot1)[5] <- "Precrop"
 
-ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = mean_RL2, colour = Precrop, linetype = depth_class, shape = Precrop)) + 
+ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = mean_RL2, colour = Precrop, linetype = depth_class, shape = Precrop)) + 
   geom_line() + geom_point() +
   facet_grid(cols = vars(Year, crop)) +
   labs(y = "Total Rootlength [km " ~m^-2 ~"]", x = "Soil Depth [cm]",
        title = "Trial B") +
   scale_x_date(date_breaks = "1 month", date_labels =  "%b") +
   theme_bw() +
+  geom_text_repel(aes(label = letters), nudge_y = 0.25, show.legend = FALSE, direction = c("x"), 
+                  segment.colour = NA) +
   scale_colour_manual(values = c("red1", "steelblue1")) + 
   theme(axis.text = element_text(size = 12), 
         axis.title.y = element_text(size = 14),
@@ -1116,7 +1285,8 @@ ggplot(plot1, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = mean_RL
         legend.text = element_text(size = 12),
         legend.title=element_blank(),
         legend.position = c(0.09, 0.82),)
-
+#warning occurse because of the rows which had to be removed for the shapiro test (only 0's), were not added in the statistics
+# -> shouldnt be a problem though
 
 
 #10.Plot7: TrialA - share of roots in biopores ####
