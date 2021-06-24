@@ -19,19 +19,19 @@ names(Nmin)[7]  <- "depth"
 Nmin <- separate(Nmin, sampling_date, sep = "-", into =c("Year", "Month", "Day"))
 Nmin <- make_JDay(Nmin)
 
-# filtering the core treatments
+# filtering the treatments we are interested in
 Nmin <- filter(Nmin, precrop_duration <= 2)
 Nmin <- Nmin[!(Nmin$precrop == "lucerne" & Nmin$precrop_duration == 1),]
 Nmin <- Nmin[!(Nmin$precrop == "chicory" & Nmin$precrop_duration == 1),]
 Nmin <- Nmin[!(Nmin$trial == "trial_C"),]
 
-# Some measurement dates have 3, other 4 measured depths, removing the ones with 3 for now
+# Some measurement dates have 3, other 4 measured depths, removing the ones with 3 and with Na's
 Nmin <- Nmin[!(Nmin$Year == "2010" & Nmin$JDay == 61),] 
 Nmin <- Nmin[!(Nmin$Year == "2011" & Nmin$JDay == 52),] 
 Nmin <- Nmin[!(Nmin$Year == "2013" & Nmin$JDay == 53),] 
-
 Nmin <- drop_na(Nmin, Nmin)
 
+# changing the treatment names
 Nmin$precrop[Nmin$precrop == "chicory"] <- "Chi"
 Nmin$precrop[Nmin$precrop == "fescue"] <- "Fes"
 Nmin$precrop[Nmin$precrop == "lucerne"] <- "Lu"
@@ -116,47 +116,69 @@ Nmin_B <- Nmin_B %>% mutate(main_crop = case_when(treatment == "4" & Year == 201
 # there is only 1 measurement of treatment 23 (in 2011), i removed it
 Nmin_B <- Nmin_B[!(Nmin_B$treatment == 23),]
 
-# 2. calculating means and plotting ###
+# 2. calculating means
 NmeanA <- Nmin_A %>% group_by(JDay, Year, precrop, precrop_duration, depth, main_crop) %>% 
   summarise(Nmean=mean(Nmin))
 
 NmeanB <- Nmin_B %>% group_by(JDay, Year, precrop, precrop_duration, depth, main_crop) %>% 
   summarise(Nmean=mean(Nmin))
 
+# combining precrop and precrop duration into treatment
+NmeanB <- NmeanB %>% unite(precrop, precrop_duration, col = "Treatment", sep = "")
+NmeanA <- NmeanA %>% unite(precrop, precrop_duration, col = "Treatment", sep = "")
+
+#changing the names of the depth classes
+NmeanA$depth[NmeanA$depth == "30"] <- "30 cm"
+NmeanA$depth[NmeanA$depth == "45"] <- "45 cm"
+NmeanA$depth[NmeanA$depth == "75"] <- "75 cm"
+NmeanA$depth[NmeanA$depth == "105"] <- "105 cm"
+
+NmeanB$depth[NmeanB$depth == "30"] <- "30 cm"
+NmeanB$depth[NmeanB$depth == "45"] <- "45 cm"
+NmeanB$depth[NmeanB$depth == "75"] <- "75 cm"
+NmeanB$depth[NmeanB$depth == "105"] <- "105 cm"
+
 # 3. lineplots ####
-NmeanA$depth = factor(NmeanA$depth, levels = c("30", "45", "75", "105"))
+# TrialA
+NmeanA$depth = factor(NmeanA$depth, levels = c("30 cm", "45 cm", "75 cm", "105 cm"))
 
-ggplot(NmeanA, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = Nmean, colour = precrop, shape = precrop_duration)) +
-  geom_point() + geom_line() +
+ggplot(NmeanA, aes(x = as.Date(JDay, origin = as.Date("2010-01-01")), y = Nmean, colour = Treatment, 
+                   linetype = Treatment, shape = Treatment)) +
+  geom_point() + geom_line(size = 0.6) +
   facet_grid(depth ~ Year + main_crop) +
-  labs(x = "", y = "Nmin [kg * "~ha^-1 ~"]", title = "Trial A Nmin") +
+  labs(x = "", y = "Nmin [kg  "~ha^-1 ~"]") +
   theme_bw() +
   scale_x_date(date_labels = "%b")+
-  theme(axis.text = element_text(size = 10), 
-        axis.title = element_text(size = 11), 
+  theme(axis.text = element_text(size = 12), 
+        axis.title = element_text(size = 14), 
         plot.title = element_text(size = 15), 
-        strip.text.y = element_text(size = 10), 
-        strip.text.x = element_text(size = 10),
-        legend.position = "bottom",
-        legend.text = element_text(size = 10),
-        legend.title=element_text(size=11))
+        strip.text.y = element_text(size = 13), 
+        strip.text.x = element_text(size = 13),
+        legend.position = c(0.05, 0.88),
+        legend.text = element_text(size = 12),
+        legend.title=element_text(size=13))
 
-NmeanB$depth = factor(NmeanB$depth, levels = c("30", "45", "75", "105"))
+# TrialB
+NmeanB$depth = factor(NmeanB$depth, levels = c("30 cm", "45 cm", "75 cm", "105 cm"))
+# removing fes1 because it was only measured for the first 4 years
+NmeanB <- NmeanB[!(NmeanB$Treatment == "Fes1"),]
 
-ggplot(NmeanB, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = Nmean, colour = precrop, shape = precrop_duration)) +
+
+ggplot(NmeanB, aes(x = as.Date(JDay, origin = as.Date("2012-01-01")), y = Nmean, colour = Treatment, 
+                   linetype = Treatment, shape = Treatment)) +
   geom_point() + geom_line() +
   facet_grid(depth ~ Year + main_crop) +
-  labs(x = "", y = "Nmin [kg * "~ha^-1 ~"]", title = "Trial B Nmin") +
+  labs(x = "", y = "Nmin [kg  "~ha^-1 ~"]") +
   theme_bw() +
   scale_x_date(date_labels = "%b")+
-  theme(axis.text = element_text(size = 10), 
-        axis.title = element_text(size = 11), 
+  theme(axis.text = element_text(size = 12), 
+        axis.title = element_text(size = 14), 
         plot.title = element_text(size = 15), 
-        strip.text.y = element_text(size = 10), 
-        strip.text.x = element_text(size = 10),
-        legend.position = "bottom",
-        legend.text = element_text(size = 10),
-        legend.title=element_text(size=11))
+        strip.text.y = element_text(size = 13), 
+        strip.text.x = element_text(size = 13),
+        legend.position = c(0.05, 0.65),
+        legend.text = element_text(size = 12),
+        legend.title=element_text(size=13))
 
 # with stacked barplots ####
 NmeanA <- NmeanA %>% unite(precrop, precrop_duration, col = "treatment", sep ="")

@@ -33,7 +33,7 @@ shapiro <- biopores %>% group_by(type, trial, year, treatment) %>%
             p.value = shapiro.test(number)$p.value)
 #most groups seem to be normal distributed -> ANOVA and Tukey Test
 
-#statistics: 2. Anova
+#statistics: 2. One-Way ANOVA
 #first we have to split the dataframe into the groups we want to compare
 #trialA
 df1 <- filter(biopores, trial == "trial_A" & year == 2010 & type == "2-5 mm")
@@ -99,16 +99,15 @@ ggplot(poresA, aes(x = treatment, y = mean, fill = treatment)) +
   geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), width=.2,
                 position=position_dodge(.9)) +
   facet_grid(rows = vars(year), cols = vars(type)) +
-  labs(fill = "Treatment",  x = "Treatment", y = bquote("Mean Biopores per " ~m^2),
-       title = "Biopores Precrops TrialA") + 
+  labs(fill = "Treatment",  x = "Treatment", y = bquote("Mean Biopores per " ~m^2)) + 
   theme_bw() +
   scale_fill_manual(values = c("tomato", "red1", "red4", "cornflowerblue", "dodgerblue",
                                  "darkblue", "darkolivegreen4", "forestgreen", "darkgreen")) + 
   theme(axis.text = element_text(size = 12, face = "bold"), 
         axis.title = element_text(size = 14, face = "bold"), 
         plot.title = element_text(size = 15, face = "bold"), 
-        strip.text.y = element_text(size = 10), 
-        strip.text.x = element_text(size = 10),
+        strip.text.y = element_text(size = 13), 
+        strip.text.x = element_text(size = 13),
         legend.text = element_text(size = 15), 
         legend.title = element_text(size = 15, face = "bold"), 
         legend.position = "none")
@@ -118,16 +117,15 @@ ggplot(poresB, aes(x = treatment, y = mean, fill = treatment)) +
   geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), width=.2,
                 position=position_dodge(.9)) +
   facet_grid(rows = vars(year), cols = vars(type)) +
-  labs(fill = "Treatment",  x = "Treatment", y = bquote("Mean Biopores per " ~m^2),
-       title = "Biopores Precrops TrialB") + 
+  labs(fill = "Treatment",  x = "Treatment", y = bquote("Mean Biopores per " ~m^2)) + 
   theme_bw() +
   scale_fill_manual(values = c("tomato", "red1", "red4", "cornflowerblue", "dodgerblue",
                                "darkblue", "darkolivegreen4", "forestgreen", "darkgreen")) + 
   theme(axis.text = element_text(size = 12, face = "bold"), 
         axis.title = element_text(size = 14, face = "bold"), 
         plot.title = element_text(size = 15, face = "bold"), 
-        strip.text.y = element_text(size = 10), 
-        strip.text.x = element_text(size = 10),
+        strip.text.y = element_text(size = 13), 
+        strip.text.x = element_text(size = 13),
         legend.text = element_text(size = 15), 
         legend.title = element_text(size = 15, face = "bold"), 
         legend.position = "none")

@@ -569,14 +569,12 @@ colnames(plot1)[5] <- "Precrop"
 #sorting depth class
 plot1$depth_class <- factor(plot1$depth_class, levels = c("18", "17", "16", "15", "14",
                                                           "13", "12", "11", "10", "9", "8", "7", "6",
-                                                          "5", "4", "3", "2", "1"))
+                                                         "5", "4", "3", "2", "1"))
 
 ggplot(plot1, aes(y = mean_RLD2, x = depth_class, colour = Precrop, group = Precrop, linetype = Precrop)) + 
   geom_point(aes(shape = Precrop)) + geom_line() + 
   facet_grid(precrop_d ~ Year + crop) +
-  labs(x = bquote("Soil Depth [cm]"), y = "Mean Rootlength Density [cm " ~cm^-3 ~"]", 
-       title = "Trial A") +
-  theme_bw() +
+  labs(x = bquote("Soil Depth [cm]"), y = "Mean Rootlength Density [cm " ~cm^-3 ~"]") +
   scale_colour_manual(values = c("red1", "steelblue1", "forestgreen")) + 
   scale_x_discrete(labels = c("170-180", "160-170", "150-160", "140-150",
                               "130-140", "120-130", "110-120", "100-110", "90-100", "80-90", "70-80",
@@ -592,7 +590,7 @@ ggplot(plot1, aes(y = mean_RLD2, x = depth_class, colour = Precrop, group = Prec
         strip.text.x = element_text(size = 13),
         legend.position = "bottom",
         legend.text = element_text(size = 12),
-        legend.title=element_text(size=14)) +
+        legend.title = element_text(size=14)) +
   theme_bw()
 
 

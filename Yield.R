@@ -2,6 +2,8 @@ library(tidyverse)
 library(readxl)
 library(chillR)
 library(rstatix)
+library(lme4)
+library(broom)
 
 yield <- read_excel("Daten_CeFiT_A_B_final.xlsx", sheet = "Ernteertraege")
 yield2 <- read_excel("precrop_data_B_revisited.xlsx", skip = 2)
@@ -24,7 +26,7 @@ CN_2020_Stroh <- read_excel("CN_2020_Stroh.xlsx")
 P_15_Korn_TA <- read_excel("PK_15_Korn_TA.xls", skip = 3)
 K_15_Korn_TA <- read_excel("PK_15_Korn_TA.xls", sheet = "K ", skip = 3)
 
-# a function to remove outliers
+# a fun ction to remove outliers
 remove_outliers <- function(x, na.rm = TRUE, ...) {
   qnt <- quantile(x, probs = c(0.25, 0.75), na.rm = na.rm, ...)
   H <- 1.5 * IQR(x, na.rm = na.rm)
@@ -34,7 +36,7 @@ remove_outliers <- function(x, na.rm = TRUE, ...) {
   y
 }
 
-# 1. changing the df's into something i can work with, calculating means and statistics
+# 1. changing the df's into something i can work with                , calculating means and statistics
 # 1.1 main table ####
 yield[3] <- NULL
 yield$precrop_duration[yield$precrop_duration == "1Y"] <- "1"
@@ -60,19 +62,21 @@ yield[15] <- NULL
 yield[10] <- NULL
 
 # adding P and K values for TA 2015 from the data.frames P_15_Korn_TA and K_15_Korn_TA
+# changing the two df a bit
 P_15_Korn_TA[2:7] <- NULL
 K_15_Korn_TA[2:5] <- NULL
 
 K_15_Korn_TA <- na.omit(K_15_Korn_TA)
 P_15_Korn_TA <- na.omit(P_15_Korn_TA)
 
+# getting the parts they belong to from the yield df
 df <- filter(yield, year == 2015 & trial == "trial_A" & crop == "WGerste")
 yield <- yield[!(yield$crop == "WGerste" & yield$year == 2015 & yield$trial == "trial_A"),]
 
 df <- arrange(df, plot_ID)
 
 df <- bind_cols(df, K_15_Korn_TA)
-df <- bind_cols(df, P_15_Korn_TA)
+df <- bind_cols(df, P_15_Korn_TA) # error because of the names that end with "%", doesnt seem to effect the data though
 df[18] <- NULL
 df[16] <- NULL
 df[10:11] <- NULL
@@ -88,27 +92,6 @@ yield <- mutate(yield, N_grain = TM_grain*(N_grain/100), P_grain = TM_grain*(P_g
                 N_residues = TM_residues*(N_residues/100), P_residues = TM_residues*(P_residues/100), 
                 K_residues = TM_residues*(K_residues/100))
 
-# removing outliers for all measured values
-yield <- yield %>% group_by(trial, year, precrop, precrop_duration, crop) %>% 
-  mutate_at(vars(TM_grain, TM_residues, N_grain, N_residues, P_grain, P_residues, K_grain, K_residues),
-            funs(remove_outliers))
-# warning because i use an old function that current dplyr patches dont support anymore, still works though
-
-# counting missing values per group
-yield_sample_size <- yield %>% group_by(trial, year, precrop, precrop_duration, crop) %>% 
-  summarise_all(funs(sum(!is.na(.))))
-
-# calculating means
-yield <- yield %>% group_by(trial, year, precrop, precrop_duration, crop) %>% 
-  summarise(TM_grain = mean(TM_grain, na.rm = TRUE),
-            N_grain = mean(N_grain, na.rm = TRUE),
-            P_grain = mean(P_grain, na.rm = TRUE),
-            K_grain = mean(K_grain, na.rm = TRUE),
-            TM_residues = mean(TM_residues, na.rm = TRUE),
-            N_residues = mean(N_residues, na.rm = TRUE),
-            P_residues = mean(P_residues, na.rm = TRUE),
-            K_residues = mean(K_residues, na.rm = TRUE))
-
 #renaming crops and treatments
 yield$crop[yield$crop == "Hafer"] <- "Oats"
 yield$crop[yield$crop == "WGerste"] <- "Winter Barley"
@@ -116,6 +99,9 @@ yield$crop[yield$crop == "WRaps"] <- "Winter Oilseed Rape"
 yield$crop[yield$crop == "WRoggen"] <- "Winter Rye"
 yield$crop[yield$crop == "WWeizen"] <- "Winter Wheat"
 yield$crop[yield$crop == "SWeizen"] <- "Spring Wheat"
+names(yield)[6] <- "plot"
+
+
 
 # 1.2 precrop_data_B (SW, after 2. precrop phase 2020) ####
 # selecting the right treatments
@@ -178,7 +164,7 @@ yield2$trial[yield2$trial == "trial B"] <- "trial_B"
 yield2$precrop[yield2$precrop == "Ch"] <- "chicory"
 yield2$precrop[yield2$precrop == "Fe"] <- "fescue"
 yield2 <- yield2[,c(2, 8, 1, 9, 7, 3, 4, 5, 6)]
-
+ 
 # 1.3 shoot_data_PK (fodder mallow 2010; measurement dates: 9.7., 20.7., 28.7.) ####
 # creating 1 df that i can work with
 tm <- gather(yield5, "TM1", "TM2", "TM3", key = "cut", value = "TM")
@@ -196,88 +182,81 @@ yield5 <- cbind(tm, n[!names(n) %in% names(tm)], p[!names(p) %in% names(tm)], k[
 # calculating the total NPK values for each sample
 yield5 <- mutate(yield5, N = TM*(N_p/100), P = TM*(P_p/100), K = TM*(K_p/100))
 
-# removing outliers for all measured values
-yield5 <- yield5 %>% group_by(Variante, cut) %>% 
-  mutate_at(vars(TM, N, P, K),
-            funs(remove_outliers))
-
-# counting missing values per group
-yield5_sample_size <- yield5 %>% group_by(Variante, cut) %>% 
-  summarise_all(funs(sum(!is.na(.))))
-
-# i decided to first calculate means for each cut and then 
-# the kumulative values
-yield5 <- yield5 %>% group_by(Variante, cut) %>%
-  summarise(TM_mix = mean(TM, na.rm = TRUE), N_mix = mean(N, na.rm = TRUE), P_mix = mean(P, na.rm = TRUE), 
-            K_mix = mean(K, na.rm = TRUE))
-
-yield5 <- yield5 %>% group_by(Variante) %>% summarise(TM_mix = sum(TM_mix), N_mix = sum(N_mix), P_mix = sum(P_mix),
-                                                      K_mix = sum(K_mix))
-
 # adding necessary columns
 yield5$year <- rep(2010, nrow(yield5))
 yield5$trial <- rep("trial_A", nrow(yield5))
 yield5$crop <- rep("Fodder Mallow", nrow(yield5))
-names(yield5)[1] <- "treatment"
+names(yield5)[2] <- "treatment"
+names(yield5)[5] <- "TM_residues"
+names(yield5)[9] <- "N_residues"
+names(yield5)[10] <- "P_residues"
+names(yield5)[11] <- "K_residues"
+names(yield5)[1] <- "plot"
 
 yield5 <- yield5 %>% mutate(precrop = case_when(treatment == 1 ~ "1", 
-                                        treatment == 2 ~ "1",
-                                        treatment == 3 ~ "1",
-                                        treatment == 4 ~ "1",
-                                        treatment == 5 ~ "1",
-                                        treatment == 6 ~ "1",
-                                        treatment == 7 ~ "1",
-                                        treatment == 8 ~ "1",
-                                        treatment == 9 ~ "1",
-                                        treatment == 10 ~ "2",
-                                        treatment == 11 ~ "2",
-                                        treatment == 12 ~ "2",
-                                        treatment == 13 ~ "2",
-                                        treatment == 14 ~ "2",
-                                        treatment == 15 ~ "2",
-                                        treatment == 16 ~ "2",
-                                        treatment == 17 ~ "2",
-                                        treatment == 18 ~ "2",
-                                        treatment == 19 ~ "3",
-                                        treatment == 20 ~ "3",
-                                        treatment == 21 ~ "3",
-                                        treatment == 22 ~ "3",
-                                        treatment == 23 ~ "3",
-                                        treatment == 24 ~ "3",
-                                        treatment == 25 ~ "3",
-                                        treatment == 26 ~ "3",
-                                        treatment == 27 ~ "3"), 
-                    precrop_duration = case_when(treatment == 1 ~ "1", 
-                                          treatment == 2 ~ "1",
-                                          treatment == 3 ~ "1",
-                                          treatment == 4 ~ "2",
-                                          treatment == 5 ~ "2",
-                                          treatment == 6 ~ "2",
-                                          treatment == 7 ~ "3",
-                                          treatment == 8 ~ "3",
-                                          treatment == 9 ~ "3",
-                                          treatment == 10 ~ "1",
-                                          treatment == 11 ~ "1",
-                                          treatment == 12 ~ "1",
-                                          treatment == 13 ~ "2",
-                                          treatment == 14 ~ "2",
-                                          treatment == 15 ~ "2",
-                                          treatment == 16 ~ "3",
-                                          treatment == 17 ~ "3",
-                                          treatment == 18 ~ "3",
-                                          treatment == 19 ~ "1",
-                                          treatment == 20 ~ "1",
-                                          treatment == 21 ~ "1",
-                                          treatment == 22 ~ "2",
-                                          treatment == 23 ~ "2",
-                                          treatment == 24 ~ "2",
-                                          treatment == 25 ~ "3",
-                                          treatment == 26 ~ "3",
-                                          treatment == 27 ~ "3"))
+                                                treatment == 2 ~ "1",
+                                                treatment == 3 ~ "1",
+                                                treatment == 4 ~ "1",
+                                                treatment == 5 ~ "1",
+                                                treatment == 6 ~ "1",
+                                                treatment == 7 ~ "1",
+                                                treatment == 8 ~ "1",
+                                                treatment == 9 ~ "1",
+                                                treatment == 10 ~ "2",
+                                                treatment == 11 ~ "2",
+                                                treatment == 12 ~ "2",
+                                                treatment == 13 ~ "2",
+                                                treatment == 14 ~ "2",
+                                                treatment == 15 ~ "2",
+                                                treatment == 16 ~ "2",
+                                                treatment == 17 ~ "2",
+                                                treatment == 18 ~ "2",
+                                                treatment == 19 ~ "3",
+                                                treatment == 20 ~ "3",
+                                                treatment == 21 ~ "3",
+                                                treatment == 22 ~ "3",
+                                                treatment == 23 ~ "3",
+                                                treatment == 24 ~ "3",
+                                                treatment == 25 ~ "3",
+                                                treatment == 26 ~ "3",
+                                                treatment == 27 ~ "3"), 
+                            precrop_duration = case_when(treatment == 1 ~ "1", 
+                                                         treatment == 2 ~ "1",
+                                                         treatment == 3 ~ "1",
+                                                         treatment == 4 ~ "2",
+                                                         treatment == 5 ~ "2",
+                                                         treatment == 6 ~ "2",
+                                                         treatment == 7 ~ "3",
+                                                         treatment == 8 ~ "3",
+                                                         treatment == 9 ~ "3",
+                                                         treatment == 10 ~ "1",
+                                                         treatment == 11 ~ "1",
+                                                         treatment == 12 ~ "1",
+                                                         treatment == 13 ~ "2",
+                                                         treatment == 14 ~ "2",
+                                                         treatment == 15 ~ "2",
+                                                         treatment == 16 ~ "3",
+                                                         treatment == 17 ~ "3",
+                                                         treatment == 18 ~ "3",
+                                                         treatment == 19 ~ "1",
+                                                         treatment == 20 ~ "1",
+                                                         treatment == 21 ~ "1",
+                                                         treatment == 22 ~ "2",
+                                                         treatment == 23 ~ "2",
+                                                         treatment == 24 ~ "2",
+                                                         treatment == 25 ~ "3",
+                                                         treatment == 26 ~ "3",
+                                                         treatment == 27 ~ "3"))
 
 yield5$precrop[yield5$precrop == "1"] <- "lucerne"
 yield5$precrop[yield5$precrop == "2"] <- "chicory"
 yield5$precrop[yield5$precrop == "3"] <- "fescue"
+
+# calculating cumulative yields for each plot
+yield5 <- yield5 %>% group_by(treatment, plot, precrop, precrop_duration, crop, trial, year) %>%
+  summarise(TM_residues = sum(TM_residues, na.rm = TRUE), N_residues = sum(N_residues, na.rm = TRUE), 
+            P_residues = sum(P_residues, na.rm = TRUE), K_residues = sum(K_residues, na.rm = TRUE))
+
 yield5 <- yield5[,c(7, 6, 9, 10, 8, 2, 3, 4, 5)]
 
 # 1.4 shoot_data_EH (fodder mallow 2012) ####
@@ -299,32 +278,19 @@ names(yield3)[9] <- "N_p"
 names(yield3)[10] <- "P_p"
 names(yield3)[11] <- "K_p"
 names(yield3)[1] <- "year"
+names(yield3)[7] <- "plot"
+yield3$trial <- rep("trial_B", nrow(yield3))
+yield3$precrop[yield3$precrop == "1"] <- "lucerne"
+yield3$precrop[yield3$precrop == "2"] <- "chicory"
+yield3$precrop[yield3$precrop == "3"] <- "fescue"
 
 # calculating the total NPK values
 yield3 <- mutate(yield3, N = TM*(N_p/100), P = TM*(P_p/100), K = TM*(K_p/100))
 
-# removing outliers for all measured values
-yield3 <- yield3 %>% group_by(year, precrop, precrop_duration, crop, Harvest) %>% 
-  mutate_at(vars(TM, N, P, K),
-            funs(remove_outliers))
-
-# counting missing values per group
-yield5_sample_size <- yield3 %>% group_by(year, precrop, precrop_duration, crop, Harvest) %>% 
-  summarise_all(funs(sum(!is.na(.))))
-
-# calculating means for each cut and treatment
-yield3 <- yield3 %>% group_by(Harvest, year, precrop, precrop_duration, crop) %>%
-  summarise(TM = mean(TM, na.rm = TRUE), N = mean(N, na.rm = TRUE), P = mean(P, na.rm = TRUE), 
-            K = mean(K, na.rm = TRUE))
-
-yield3 <- yield3 %>% group_by(year, precrop, precrop_duration, crop) %>% 
-  summarise(TM_mix = sum(TM), N_mix = sum(N), P_mix = sum(P), K_mix = sum(K))
-
-yield3$trial <- rep("trial_B", nrow(yield3))
-yield3 <- yield3[,c(9, 1, 2, 3, 4, 5, 6, 7, 8)]
-yield3$precrop[yield3$precrop == "1"] <- "lucerne"
-yield3$precrop[yield3$precrop == "2"] <- "chicory"
-yield3$precrop[yield3$precrop == "3"] <- "fescue"
+# calculating cummulative yields for each plot
+yield3 <- yield3 %>% group_by(treatment, plot, precrop, precrop_duration, crop, trial, year) %>%
+  summarise(TM_residues = sum(TM, na.rm = TRUE), N_residues = sum(N, na.rm = TRUE), 
+            P_residues = sum(P, na.rm = TRUE), K_residues = sum(K, na.rm = TRUE))
 
 # 1.5 Trial A 2019 (Sommerweizen, after 2. precrop phase 2019) ####
 # deleting unnecessary columns 
@@ -549,17 +515,13 @@ names(trialC)[1] <- "trial"
 names(trialC)[3] <- "year"
 trialC$crop[trialC$crop == "spring barley"] <- "Spring Barley"
 
-# 2. preparing the plotting ####
-# combining the dfs
-yield <- transform(yield, year = as.character(year))
-yield2 <- transform(yield2, year = as.character(year))
-yield3 <- transform(yield3, year = as.character(year), precrop_duration = as.character(precrop_duration))
-yield5 <- transform(yield5, year = as.character(year))
-yield6 <- transform(yield6, year = as.character(year))
+# 2. Combining the Dataframes ####
+yield <- transform(yield, precrop_duration = as.factor(precrop_duration))
+yield3 <- transform(yield3, precrop_duration = as.factor(precrop_duration))
+yield5 <- transform(yield5, precrop_duration = as.factor(precrop_duration))
 
 yield <- bind_rows(yield, yield3, yield5)
 
-# combining the treatments
 yield <- yield %>% unite(precrop, precrop_duration, col = "treatment", sep ="-")
 yield$treatment[yield$treatment == "chicory-1"] <- "Chi1"
 yield$treatment[yield$treatment == "chicory-2"] <- "Chi2"
@@ -571,13 +533,52 @@ yield$treatment[yield$treatment == "lucerne-1"] <- "Lu1"
 yield$treatment[yield$treatment == "lucerne-2"] <- "Lu2"
 yield$treatment[yield$treatment == "lucerne-3"] <- "Lu3"
 
+# 3. Statistics ####
+# 1. main dataframe
+# removing outliers
+yield <- yield %>% group_by(trial, year, treatment, crop) %>% 
+  mutate_at(vars(TM_grain, TM_residues, N_grain, N_residues, P_grain, P_residues, K_grain, K_residues),
+            funs(remove_outliers))
+# warning because i use an old function that current dplyr patches dont support anymore, still works though
+
+# counting missing values and sample size per group
+yield_sample_size <- yield %>% group_by(trial, year, treatment, crop) %>% 
+  summarise_all(funs(sum(!is.na(.))))
+
+#####
+# checking for normal distribution
+shapiro <- yield %>% group_by(trial, year, precrop_duration, precrop, crop) %>%
+  summarise(statistic = shapiro.test(TM_grain)$statistic,
+            p.value = shapiro.test(TM_grain)$p.value)
+# shapiro-wilk test not feasible because of low sample sizes 
+
+yield <- transform(yield, trial = as.factor(trial), year = as.factor(year), 
+                   crop = as.factor(crop), treatment = as.factor(treatment))
+
+yield %>%
+  group_by(trial, year, crop) %>%
+  group_modify(~ broom::tidy(lmer(TM_grain ~ precrop + (1|precrop_duration), data = .x)))
+#####
+
+# calculating means
+yield <- yield %>% group_by(trial, year, treatment, crop) %>% 
+  summarise(TM_grain = mean(TM_grain, na.rm = TRUE),
+            N_grain = mean(N_grain, na.rm = TRUE),
+            P_grain = mean(P_grain, na.rm = TRUE),
+            K_grain = mean(K_grain, na.rm = TRUE),
+            TM_residues = mean(TM_residues, na.rm = TRUE),
+            N_residues = mean(N_residues, na.rm = TRUE),
+            P_residues = mean(P_residues, na.rm = TRUE),
+            K_residues = mean(K_residues, na.rm = TRUE))
+
+# 4. preparing the plotting ####
+# combining the treatments
 # combining straw and grain yield to plot them together
-yield_mean <- yield %>% gather(TM_grain, TM_residues, TM_mix, key = "Dry_Matter", value = "mean_tm")
-yield_mean[5:13] <- NULL
+yield_mean <- yield %>% gather(TM_grain, TM_residues, key = "Dry_Matter", value = "mean_tm")
+yield_mean[5:10] <- NULL
 yield_mean <- na.omit(yield_mean)
 yield_mean$Dry_Matter[yield_mean$Dry_Matter == "TM_grain"] <- "Grain DM"
 yield_mean$Dry_Matter[yield_mean$Dry_Matter == "TM_residues"] <- "Residue DM"
-yield_mean$Dry_Matter[yield_mean$Dry_Matter == "TM_mix"] <- "Mixed DM"
 
 # calculating total NPK uptake
 # yield_npk <- yield %>% gather(N_grain, P_grain, K_grain, N_residues, P_residues, K_residues, 
@@ -585,9 +586,9 @@ yield_mean$Dry_Matter[yield_mean$Dry_Matter == "TM_mix"] <- "Mixed DM"
 #yield_npk[5:7] <- NULL
 #yield_npk <- na.omit(yield_npk)
 yield_npk <- yield %>% replace(is.na(.), 0) %>% 
-  mutate(N_total = N_grain + N_residues + N_mix, P_total = P_grain + P_residues + P_mix,
-         K_total = K_grain + K_residues + K_mix)
-yield_npk[5:16] <- NULL
+  mutate(N_total = N_grain + N_residues, P_total = P_grain + P_residues,
+         K_total = K_grain + K_residues)
+yield_npk[5:12] <- NULL
 
 # making seperate tables for the facet wrap
 wrapA <- filter(yield_mean, trial == "trial_A")
@@ -613,6 +614,7 @@ wrapA_cum$year <- rep("2010-2015", nrow(wrapA_cum))
 wrapA_cum$trial <- rep("trial_A", nrow(wrapA_cum))
 wrapA_cum$crop <- rep("Cummulative", nrow(wrapA_cum))
 wrapA_cum <- wrapA_cum[,c(5, 4, 1, 6, 2, 3)]
+wrapA <- transform(wrapA, year = as.factor(year))
 wrapA <- bind_rows(wrapA, wrapA_cum)
 wrapA$mean_tm <- wrapA$mean_tm/1000
 
@@ -633,6 +635,7 @@ wrapB_cum$trial <- rep("trial_A", nrow(wrapB_cum))
 wrapB_cum$crop <- rep("Cummulative", nrow(wrapB_cum))
 wrapB_cum <- wrapB_cum[,c(5, 4, 1, 6, 2, 3)]
 wrapB_cum <- wrapB_cum[!(wrapB_cum$crop == "Spring Wheat" & wrapB_cum$year == 2020),]
+wrapB <- transform(wrapB, year = as.character(year))
 wrapB <- bind_rows(wrapB, wrapB_cum)
 wrapB$mean_tm <- wrapB$mean_tm/1000
 
@@ -646,6 +649,7 @@ NPK_A_cum$crop <- rep("Cummulative", nrow(NPK_A_cum))
 NPK_A_cum <- NPK_A_cum[,c(6, 5, 1, 7, 2, 3, 4)]
 NPK_A <- NPK_A %>% gather(N_total, P_total, K_total, key = "nutrient", value = "value")
 NPK_A_cum <- NPK_A_cum %>% gather(N_total, P_total, K_total, key = "nutrient", value = "value")
+NPK_A <- transform(NPK_A, year = as.character(year))
 NPK_A <- bind_rows(NPK_A, NPK_A_cum)
 NPK_A$nutrient[NPK_A$nutrient == "N_total"] <- "N"
 NPK_A$nutrient[NPK_A$nutrient == "P_total"] <- "P"
@@ -661,6 +665,7 @@ NPK_B_cum$crop <- rep("Cummulative", nrow(NPK_B_cum))
 NPK_B_cum <- NPK_B_cum[,c(6, 5, 1, 7, 2, 3, 4)]
 NPK_B <- NPK_B %>% gather(N_total, P_total, K_total, key = "nutrient", value = "value")
 NPK_B_cum <- NPK_B_cum %>% gather(N_total, P_total, K_total, key = "nutrient", value = "value")
+NPK_B <- transform(NPK_B, year = as.character(year))
 NPK_B <- bind_rows(NPK_B, NPK_B_cum)
 NPK_B$nutrient[NPK_B$nutrient == "N_total"] <- "N"
 NPK_B$nutrient[NPK_B$nutrient == "P_total"] <- "P"
@@ -673,12 +678,11 @@ wrapA$year <- factor(wrapA$year, levels = c("2010", "2011", "2012", "2013", "201
 ggplot(wrapA, aes(x = treatment, y = mean_tm, fill = Dry_Matter)) +
   geom_bar(stat = "identity", position = "stack", colour = "black") +
   facet_wrap(~ year + crop, scales = "free") +
-  geom_text(aes(label = round(mean_tm, 2)), position = position_stack(vjust = .5), size = 3.5) +
+  geom_text(aes(label = round(mean_tm, 1)), position = position_stack(vjust = .5), size = 3.5) +
   # facet_grid(cols = vars(crop)) +
   scale_fill_manual(values = c("darkgoldenrod1", "forestgreen"))  +
   labs(x = "Treatment", 
-       y = bquote("Mean Yield [t* " ~ha^-1~"]"), 
-       title = "Trial A") +
+       y = bquote("Mean Yield [t " ~ha^-1~"]")) +
   theme_bw() +
   theme(axis.text = element_text(size = 10), 
         axis.title.y = element_text(size = 14),
@@ -693,12 +697,11 @@ wrapB$year <- factor(wrapB$year, levels = c("2012", "2013", "2014", "2015", "201
 ggplot(wrapB, aes(x = treatment, y = mean_tm, fill = Dry_Matter)) +
   geom_bar(stat = "identity", position = "stack", colour = "black") +
   facet_wrap(~ year + crop, scales = "free") +
-  geom_text(aes(label = round(mean_tm, 2)), position = position_stack(vjust = .5), size = 3.5) +
+  geom_text(aes(label = round(mean_tm, 1)), position = position_stack(vjust = .5), size = 3.5) +
   # facet_grid(cols = vars(crop)) +
   scale_fill_manual(values = c("darkgoldenrod1", "forestgreen"))  +
   labs(x = "Treatment", 
-       y = bquote("Mean Yield [t* " ~ha^-1~"]"), 
-       title = "Trial B") +
+       y = bquote("Mean Yield [t " ~ha^-1~"]")) +
   theme_bw() +
   theme(axis.text = element_text(size = 10), 
         axis.title.y = element_text(size = 14),
@@ -721,8 +724,7 @@ ggplot(NPK_A, aes(x = treatment, y = value, fill = nutrient)) +
   facet_wrap(~ year + crop, scales = "free") +
   scale_fill_manual(values = c("cornflowerblue", "forestgreen", "darkgoldenrod1")) +
   labs(x = "Treatment", 
-       y = bquote("Mean Nutrient Uptake [kg* " ~ha^-1~"]"), 
-       title = "Trial A Nutrient Uptake") +
+       y = bquote("Mean Nutrient Uptake [kg  " ~ha^-1~"]")) +
   theme_bw() +
   theme(axis.text = element_text(size = 10), 
         axis.title.y = element_text(size = 14),
@@ -744,8 +746,7 @@ ggplot(NPK_B, aes(x = treatment, y = value, fill = nutrient)) +
   facet_wrap(~ year + crop, scales = "free") +
   scale_fill_manual(values = c("cornflowerblue", "forestgreen", "darkgoldenrod1")) +
   labs(x = "Treatment", 
-       y = bquote("Mean Nutrient Uptake [kg* " ~ha^-1~"]"), 
-       title = "Trial B Nutrient Uptake") +
+       y = bquote("Mean Nutrient Uptake [kg " ~ha^-1~"]")) +
   theme_bw() +
   theme(axis.text = element_text(size = 10), 
         axis.title.y = element_text(size = 14),
@@ -788,11 +789,11 @@ yield221$trial[yield221$trial == "trial_B"] <- "Trial B"
 ggplot(yield221, aes(x = treatment, y = value, fill = Dry_Matter)) +
   geom_bar(stat = "identity", position = "stack", colour = "black") +
   facet_wrap(~ trial + year, scales = "free") +
-  geom_text(aes(label = round(value, 2)), position = position_stack(vjust = .5), size = 3.5) +
+  geom_text(aes(label = round(value, 1)), position = position_stack(vjust = .5), size = 3.5) +
   # facet_grid(cols = vars(crop)) +
   scale_fill_manual(values = c("darkgoldenrod1", "forestgreen"))  +
   labs(x = "Treatment", 
-       y = bquote("Mean Yield [t* " ~ha^-1~"]")) +
+       y = bquote("Mean Yield [t " ~ha^-1~"]")) +
   theme_bw() +
   theme(axis.text = element_text(size = 10), 
         axis.title.y = element_text(size = 14),
@@ -819,11 +820,11 @@ npk22$nutrient <-  factor(npk22$nutrient, levels = c("N", "P", "K"))
 
 ggplot(npk22, aes(x = treatment, y = value, fill = nutrient)) +
   geom_bar(stat = "identity", position = "stack", colour = "black") +
-  geom_text(aes(label = round(value)), position = position_stack(vjust = .5), size = 3.5) +
+  geom_text(aes(label = round(value), 1), position = position_stack(vjust = .5), size = 3.5) +
   facet_wrap(~ trial + year, scales = "free") +
   scale_fill_manual(values = c("cornflowerblue", "forestgreen", "darkgoldenrod1")) +
   labs(x = "Treatment", 
-       y = bquote("Mean Nutrient Uptake [kg* " ~ha^-1~"]")) +
+       y = bquote("Mean Nutrient Uptake [kg " ~ha^-1~"]")) +
   theme_bw() +
   theme(axis.text = element_text(size = 10), 
         axis.title.y = element_text(size = 14),
